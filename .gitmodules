@@ -1,0 +1,3 @@
+[submodule "Christians-Steam-Framework"]
+	path = Christians-Steam-Framework
+	url = git@github.com:Christian-Stieber/Christians-Steam-Framework.git
