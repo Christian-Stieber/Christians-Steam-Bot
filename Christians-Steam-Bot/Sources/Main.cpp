@@ -18,11 +18,14 @@
  */
 
 #include "UI/UI.hpp"
+#include "UI/CLI.hpp"
 
 /************************************************************************/
 
 std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
 {
+    SteamBot::UI::CLI::useCommonCommands();
+
     return createConsole();
 }
 
