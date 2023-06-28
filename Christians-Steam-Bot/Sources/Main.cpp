@@ -20,11 +20,16 @@
 #include "UI/UI.hpp"
 #include "UI/CLI.hpp"
 
+#include "Modules/PersonaState.hpp"
+
 /************************************************************************/
 
 std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
 {
     SteamBot::UI::CLI::useCommonCommands();
+    SteamBot::UI::CLI::useListGamesCommand();
+    SteamBot::UI::CLI::usePlayStopGameCommands();
+    SteamBot::UI::CLI::useAddLicenseCommand();
 
     return createConsole();
 }
@@ -33,6 +38,8 @@ std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
 
 void application()
 {
+    SteamBot::Modules::PersonaState::use();
+
     SteamBot::UI::Thread::outputText("Welcome to Christian's work-in-progress SteamBot");
     SteamBot::UI::Thread::outputText("Note: use the TAB or RETURN key to enter command mode");
 
