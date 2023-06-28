@@ -17,12 +17,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#include "WorkingDir.hpp"
-#include "Client/Client.hpp"
 #include "UI/UI.hpp"
-#include "Logging.hpp"
-
-#include <locale>
 
 /************************************************************************/
 
@@ -33,18 +28,10 @@ std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
 
 /************************************************************************/
 
-int main(void)
+void application()
 {
-	std::locale::global(std::locale::classic());
-	SteamBot::setWorkingDir();
-
-    SteamBot::Logging::init();
-    SteamBot::ClientInfo::init();
-
     SteamBot::UI::Thread::outputText("Welcome to Christian's work-in-progress SteamBot");
     SteamBot::UI::Thread::outputText("Note: use the TAB or RETURN key to enter command mode");
-    SteamBot::UI::Thread::wait();
 
-    BOOST_LOG_TRIVIAL(debug) << "exiting";
-	return EXIT_SUCCESS;
+    SteamBot::UI::Thread::wait();
 }
