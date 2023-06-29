@@ -22,7 +22,7 @@
 
 #include "Modules/PersonaState.hpp"
 #include "Modules/CardFarmer.hpp"
-#include "Modules/DiscoveryQueue.hpp"
+#include "Modules/SaleQueue.hpp"
 
 /************************************************************************/
 
@@ -43,6 +43,7 @@ void application()
 {
     SteamBot::Modules::PersonaState::use();
     SteamBot::Modules::CardFarmer::use();
+    SteamBot::Modules::SaleQueue::use();
 
     SteamBot::UI::Thread::outputText("Welcome to Christian's work-in-progress SteamBot");
     SteamBot::UI::Thread::outputText("Note: use the TAB or RETURN key to enter command mode");
