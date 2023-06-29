@@ -21,6 +21,8 @@
 #include "UI/CLI.hpp"
 
 #include "Modules/PersonaState.hpp"
+#include "Modules/CardFarmer.hpp"
+#include "Modules/DiscoveryQueue.hpp"
 
 /************************************************************************/
 
@@ -30,6 +32,7 @@ std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
     SteamBot::UI::CLI::useListGamesCommand();
     SteamBot::UI::CLI::usePlayStopGameCommands();
     SteamBot::UI::CLI::useAddLicenseCommand();
+    SteamBot::UI::CLI::useClearQueueCommand();
 
     return createConsole();
 }
@@ -39,6 +42,7 @@ std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
 void application()
 {
     SteamBot::Modules::PersonaState::use();
+    SteamBot::Modules::CardFarmer::use();
 
     SteamBot::UI::Thread::outputText("Welcome to Christian's work-in-progress SteamBot");
     SteamBot::UI::Thread::outputText("Note: use the TAB or RETURN key to enter command mode");
