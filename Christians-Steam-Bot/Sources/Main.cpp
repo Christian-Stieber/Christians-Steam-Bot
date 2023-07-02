@@ -23,6 +23,8 @@
 #include "Modules/PersonaState.hpp"
 #include "Modules/CardFarmer.hpp"
 
+#include "Settings.hpp"
+
 /************************************************************************/
 
 std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
@@ -33,6 +35,10 @@ std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
     SteamBot::UI::CLI::useAddLicenseCommand();
     SteamBot::UI::CLI::useClearQueueCommand();
     SteamBot::UI::CLI::useSaleEventCommand();
+
+    SteamBot::UI::CLI::useSettingsCommand();
+
+    SteamBot::ClientSettings::get().use("test-item", SteamBot::ClientSettings::Type::Bool);
 
     return createConsole();
 }
