@@ -25,6 +25,10 @@
 
 #include "Settings.hpp"
 
+#include "Client/Module.hpp"
+#include "Modules/UnifiedMessageServer.hpp"
+#include "Steam/ProtoBuf/steammessages_player.steamclient.hpp"
+
 /************************************************************************/
 
 std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
@@ -41,6 +45,46 @@ std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
     SteamBot::ClientSettings::get().use("test-item", SteamBot::ClientSettings::Type::Bool);
 
     return createConsole();
+}
+
+/************************************************************************/
+
+namespace
+{
+    class TestModule : public SteamBot::Client::Module
+    {
+    public:
+        TestModule() =default;
+        virtual ~TestModule() =default;
+
+        virtual void run(SteamBot::Client& client) override
+        {
+            SteamBot::Modules::UnifiedMessageServer::registerNotification<Steam::CPlayerLastPlayedTimesNotificationMessageType>("PlayerClient.NotifyLastPlayedTimes#1");
+
+            auto notification=client.messageboard.createWaiter<Steam::CPlayerLastPlayedTimesNotificationMessageType>(*waiter);
+            while (true)
+            {
+                waiter->wait();
+                if (auto message=notification->fetch())
+                {
+                    SteamBot::UI::OutputText output;
+                    output << "received a PlayerClient.NotifyLastPlayedTimes#1 notification for";
+                    const char* separator=" ";
+                    for (size_t i=0; i<message->content.games_size(); i++)
+                    {
+                        const auto& game=message->content.games(i);
+                        if (game.has_appid())
+                        {
+                            output << separator << game.appid();
+                            separator=", ";
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    TestModule::Init<TestModule> init;
 }
 
 /************************************************************************/
