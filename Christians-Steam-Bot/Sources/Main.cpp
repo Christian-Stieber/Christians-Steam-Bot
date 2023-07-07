@@ -22,12 +22,13 @@
 
 #include "Modules/PersonaState.hpp"
 #include "Modules/CardFarmer.hpp"
+#include "Modules/TradeOffers.hpp"
 
 #include "Settings.hpp"
 
 #include "Client/Module.hpp"
-#include "Modules/UnifiedMessageServer.hpp"
-#include "Steam/ProtoBuf/steammessages_player.steamclient.hpp"
+
+#include "Modules/ClientNotification.hpp"
 
 /************************************************************************/
 
@@ -39,6 +40,7 @@ std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
     SteamBot::UI::CLI::useAddLicenseCommand();
     SteamBot::UI::CLI::useClearQueueCommand();
     SteamBot::UI::CLI::useSaleEventCommand();
+    SteamBot::UI::CLI::useListInventoryCommand();
 
     SteamBot::UI::CLI::useSettingsCommand();
 
@@ -48,6 +50,10 @@ std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
 }
 
 /************************************************************************/
+
+#if 0
+#include "Modules/UnifiedMessageServer.hpp"
+#include "Steam/ProtoBuf/steammessages_player.steamclient.hpp"
 
 namespace
 {
@@ -86,6 +92,7 @@ namespace
 
     TestModule::Init<TestModule> init;
 }
+#endif
 
 /************************************************************************/
 
@@ -93,6 +100,9 @@ void application()
 {
     SteamBot::Modules::PersonaState::use();
     // SteamBot::Modules::CardFarmer::use();
+
+    SteamBot::Modules::TradeOffers::use();
+    SteamBot::Modules::ClientNotification::use();
 
     SteamBot::UI::Thread::outputText("Welcome to Christian's work-in-progress SteamBot");
     SteamBot::UI::Thread::outputText("Note: use the TAB or RETURN key to enter command mode");
