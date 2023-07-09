@@ -1,5 +1,7 @@
 This Steam-Bot only has a simple CLI... for now?
 
+Also, some commands are very basic, like "load-inventory". This is primarly a UI so I can test framework functionality, so I'll often add such simple commands before even starting on more substantial functionality that utilizies these basic building blocks.
+
 # Activating command mode
 
 Normally, the bot just outputs whatever messages it wants to tell to the screen.
@@ -48,16 +50,34 @@ gives a list of known account names, and their status in the bot
 * `[<accountname>:] play-game <app-id>`\
   `[<accountname>:] stop-game <app-id>`\
   start/stop "playing" that specified game
-* `[<accountname>] add-license <app-id>`\
+* `[<accountname>:] add-license <app-id>`\
   add a free license (F2P, demo) to the account
-* `[<accountname>] clear-queue`\
+* `[<accountname>:] clear-queue`\
   clear one discovery queue.\
   You might want to use the `sale-event` command instead.
 
 # Complex actions
 
-* `[<accountname>] sale-event`\
+* `[<accountname>:] sale-event`\
   Performs supported sale-event activities. Currently, this means:
   * clearing sale event discovery queues
   * claiming a sale-sticker
-  
+
+# Inventory
+
+* `[<accountname>:] load-inventory`\
+  loads the inventory of the account into memory
+
+* `[<accountname>:] list-inventory [--tradable] [<regex>]`\
+  lists items from the loaded inventory
+
+# Trading
+
+* `[<accountname>:] send-inventory <accountname>`\
+  sends (all/the first 100) tradable items from the inventory to the other account.
+  Note that the recipient account must also be configured on this bot, at least for now.
+  Also note that you will have confirm the trade as usual; the bot doesn't do that (and likely never will).
+
+* `[<accountname>:] accept-trade <tradeofferid>`\
+  accepts a trade.
+  Note that, for some reason, I haven't added a command to list incomning trades. It will get and print the list once on startup, though.
