@@ -74,10 +74,10 @@ gives a list of known account names, and their status in the bot
 # Trading
 
 * `[<accountname>:] send-inventory <accountname>`\
-  sends (all/the first 100) tradable items from the inventory to the other account.
-  Note that the recipient account must also be configured on this bot, at least for now.
+  sends (all/the first 100) tradable items from the inventory to the other account.\
+  Note that the recipient account must also be configured on this bot, at least for now.\
   Also note that you will have confirm the trade as usual; the bot doesn't do that (and likely never will).
 
 * `[<accountname>:] accept-trade <tradeofferid>`\
-  accepts a trade.
-  Note that, for some reason, I haven't added a command to list incomning trades. It will get and print the list once on startup, though.
+  accepts a trade.\
+  Note that, for some reason, I haven't added a command to list incoming trades. It will get and print the list once on startup, though.
