@@ -43,6 +43,7 @@ std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
     SteamBot::UI::CLI::useListInventoryCommand();
     SteamBot::UI::CLI::useSendInventoryCommand();
     SteamBot::UI::CLI::useAcceptTradeCommand();
+    SteamBot::UI::CLI::useDeclineTradeCommand();
 
     SteamBot::UI::CLI::useSettingsCommand();
 

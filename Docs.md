@@ -81,3 +81,6 @@ gives a list of known account names, and their status in the bot
 * `[<accountname>:] accept-trade <tradeofferid>`\
   accepts a trade.\
   Note that, for some reason, I haven't added a command to list incoming trades. It will get and print the list once on startup, though.
+
+* `[<accountname>:] decline-trade <tradeofferid>`\
+  declines a trade.
