@@ -1,6 +1,6 @@
 This Steam-Bot only has a simple CLI... for now?
 
-Also, some commands are very basic, like "load-inventory". This is primarly a UI so I can test framework functionality, so I'll often add such simple commands before even starting on more substantial functionality that utilizies these basic building blocks.
+Also, some commands are very basic. This is primarly a UI so I can test framework functionality, so I'll often add such simple commands before even starting on more substantial functionality that utilizies these basic building blocks.
 
 # Activating command mode
 
@@ -65,11 +65,8 @@ gives a list of known account names, and their status in the bot
 
 # Inventory
 
-* `[<accountname>:] load-inventory`\
-  loads the inventory of the account into memory
-
 * `[<accountname>:] list-inventory [--tradable] [<regex>]`\
-  lists items from the loaded inventory
+  lists items from the inventory
 
 # Trading
 
