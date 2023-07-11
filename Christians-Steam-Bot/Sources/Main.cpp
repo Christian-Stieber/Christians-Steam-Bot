@@ -22,13 +22,10 @@
 
 #include "Modules/PersonaState.hpp"
 #include "Modules/CardFarmer.hpp"
-#include "Modules/TradeOffers.hpp"
 
 #include "Settings.hpp"
 
 #include "Client/Module.hpp"
-
-#include "Modules/ClientNotification.hpp"
 
 /************************************************************************/
 
@@ -44,6 +41,7 @@ std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
     SteamBot::UI::CLI::useSendInventoryCommand();
     SteamBot::UI::CLI::useAcceptTradeCommand();
     SteamBot::UI::CLI::useDeclineTradeCommand();
+    SteamBot::UI::CLI::useListTradeOffersCommand();
 
     SteamBot::UI::CLI::useSettingsCommand();
 
@@ -103,9 +101,6 @@ void application()
 {
     SteamBot::Modules::PersonaState::use();
     // SteamBot::Modules::CardFarmer::use();
-
-    SteamBot::Modules::TradeOffers::use();
-    SteamBot::Modules::ClientNotification::use();
 
     SteamBot::UI::Thread::outputText("Welcome to Christian's work-in-progress SteamBot");
     SteamBot::UI::Thread::outputText("Note: use the TAB or RETURN key to enter command mode");

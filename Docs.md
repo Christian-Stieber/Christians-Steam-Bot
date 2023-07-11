@@ -53,11 +53,14 @@ gives a list of known account names, and their status in the bot
 * `[<accountname>:] add-license <app-id>`\
   add a free license (F2P, demo) to the account
 * `[<accountname>:] clear-queue`\
-  clear one discovery queue.\
-  You might want to use the `sale-event` command instead.
+  clear one discovery queue.
+* `[<accountname>:] sale-sticker`\
+  claim a sale sticker, if available.
 
 # Complex actions
 
+* `[<accountname>:] sale-queue`\
+  clear all sale-queues.
 * `[<accountname>:] sale-event`\
   Performs supported sale-event activities. Currently, this means:
   * clearing sale event discovery queues
@@ -69,6 +72,9 @@ gives a list of known account names, and their status in the bot
   lists items from the inventory
 
 # Trading
+
+* `[<accountname>:] list-tradeoffers`\
+  list incoming trade offers
 
 * `[<accountname>:] send-inventory <accountname>`\
   sends (all/the first 100) tradable items from the inventory to the other account.\
