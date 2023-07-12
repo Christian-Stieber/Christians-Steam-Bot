@@ -87,3 +87,6 @@ gives a list of known account names, and their status in the bot
 
 * `[<accountname>:] decline-trade <tradeofferid>`\
   declines a trade.
+
+* `[<accountname>:] set auto-accept-bot-gifts on/off`\
+  (persistently) enable/disable auto-accept gifts from other bot accounts
