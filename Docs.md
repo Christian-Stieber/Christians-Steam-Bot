@@ -19,6 +19,7 @@ Note:
 A command consists of words that are separated by spaces. If you wish to include spaces in a word, you can either quote the word as in `"this is one word"` or use the `\` character to elimnate any special meaning of the character following it, as in `this\ is\ a\ single\ word`.
 
 If the first word of a command ends with a `:`, as in `name:`, it designates the name of the Steam account to use for this command. There is also a current account that will be used if none is specified on the command. Not every command requires an account, but many commands do.
+Instead of an account name, you can also provide a `@groupname:` representing all accounts in that group, or `*:` which addresses all active accounts. This lets you run the same command on multiple accounts.
 
 The next word will be the actual command name, and additional words will be used as parameters as necessary for that command. Examples:
    `account: list-games neptunia`
@@ -90,3 +91,17 @@ gives a list of known account names, and their status in the bot
 
 * `[<accountname>:] set auto-accept-bot-gifts on/off`\
   (persistently) enable/disable auto-accept gifts from other bot accounts
+
+# Group management
+
+* `create-group <groupname> <accountname> [<accountname> ...]`\
+  create a new group
+
+* `add-group <groupname> <accountname> [<accountname> ...]`\
+  add more accounts to a group
+
+* `remove-group <groupname> <accountname> [<accountname> ...]`\
+  remove accounts from group
+
+* `list-groups`\
+  show groups and their members
