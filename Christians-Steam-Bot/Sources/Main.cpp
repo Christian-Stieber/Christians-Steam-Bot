@@ -110,6 +110,8 @@ std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
     SteamBot::UI::CLI::useAcceptTradeCommand();
     SteamBot::UI::CLI::useDeclineTradeCommand();
     SteamBot::UI::CLI::useListTradeOffersCommand();
+    SteamBot::UI::CLI::useCreateAddRemoveGroupCommands();
+    SteamBot::UI::CLI::useListGroupsCommand();
 
     SteamBot::UI::CLI::useSettingsCommand();
 
