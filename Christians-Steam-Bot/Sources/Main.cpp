@@ -99,6 +99,18 @@ namespace
 
 std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
 {
+    SteamBot::UI::CLI::useExitCommand();
+
+#if 0
+    useHelpCommand();
+    useStatusCommand();
+    useSelectCommand();
+    useLaunchCommand();
+    useCreateCommand();
+    useQuitCommand();
+#endif
+
+#if 0
     SteamBot::UI::CLI::useCommonCommands();
     SteamBot::UI::CLI::useListGamesCommand();
     SteamBot::UI::CLI::usePlayStopGameCommands();
@@ -115,6 +127,7 @@ std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
     SteamBot::UI::CLI::useListGroupsCommand();
 
     SteamBot::UI::CLI::useSettingsCommand();
+#endif
 
     return createConsole();
 }

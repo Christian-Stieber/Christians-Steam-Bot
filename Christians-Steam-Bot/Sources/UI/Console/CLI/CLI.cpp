@@ -17,8 +17,11 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include "UI/Command.hpp"
 #include "./Helpers.hpp"
 #include "Vector.hpp"
+
+#include <map>
 
 /************************************************************************/
 
@@ -26,9 +29,6 @@ CLI::CLI(ConsoleUI& ui_)
     : ui(ui_),
       helpers(std::make_unique<Helpers>(*this))
 {
-    SteamBot::Startup::InitBase<CLICommandBase, CLI&>::initAll([this](std::unique_ptr<CLICommandBase> command){
-        commands.emplace_back(std::move(command));
-    }, *this);
 }
 
 /************************************************************************/
@@ -37,34 +37,73 @@ CLI::~CLI() =default;
 
 /************************************************************************/
 
-CLI::CLICommandBase::~CLICommandBase() =default;
-
-/************************************************************************/
-
-void CLI::CLICommandBase::printSyntax() const
+static const auto& getCommands()
 {
-    if (needsAccount)
-    {
-        std::cout << "[<account>:] ";
-    }
-    std::cout << command;
-    if (syntax.size()!=0)
-    {
-        std::cout << " " << syntax;
-    }
+    typedef std::map<std::string_view, std::unique_ptr<SteamBot::UI::CommandBase>> CommandList;
+
+    static const CommandList& commands=*([](){
+        auto commands=new CommandList;
+        SteamBot::Startup::InitBase<SteamBot::UI::CommandBase>::initAll([commands](std::unique_ptr<SteamBot::UI::CommandBase> command) {
+            const auto key=command->command();
+            const bool success=commands->try_emplace(key, std::move(command)).second;
+            assert(success);
+        });
+        return commands;
+    }());
+
+    return commands;
 }
 
 /************************************************************************/
 
-void CLI::showHelp()
+void SteamBot::UI::CommandBase::print(std::ostream& stream) const
 {
-    std::cout << "valid commands:" << std::endl;
-    for (const auto& command : commands)
+    if (!global())
     {
-        std::cout << "   ";
-        command->printSyntax();
-        std::cout << " -> " << command->description << std::endl;
+        stream << "[<account>:] ";
     }
+
+    stream << command();
+
+    size_t maxLength=0;
+    std::vector<std::string> strings;
+    {
+        strings.reserve(options().options().size());
+        for (const auto& option : options().options())
+        {
+            strings.push_back(option->format_parameter());
+
+            size_t length=strings.back().size();
+            if (length>maxLength)
+            {
+                maxLength=length;
+            }
+        }
+    }
+
+    for (size_t i=0; i<strings.size(); i++)
+    {
+        stream << "\n   " << strings[i];
+        for (size_t tab=maxLength-strings[i].size(); tab>0; tab--)
+        {
+            stream << " ";
+        }
+        stream << " : " << options().options()[i]->description();
+    }
+
+    stream << std::endl;
+}
+
+/************************************************************************/
+
+void CLI::listCommands()
+{
+    std::cout << "valid commands:";
+    for (const auto& command : getCommands())
+    {
+        std::cout << "\n   " << command.first;
+    }
+    std::cout << std::endl;
 }
 
 /************************************************************************/
@@ -114,38 +153,24 @@ std::vector<SteamBot::ClientInfo*> expandAccountName(std::string_view name)
 }
 
 /************************************************************************/
-
-static bool executeCommand(SteamBot::ClientInfo* clientInfo, SteamBot::UI::CLI::CLICommandBase* command, std::vector<std::string>& words)
-{
-    if (!command->execute(clientInfo, words))
-    {
-        std::cout << "command syntax: ";
-        command->printSyntax();
-        std::cout << std::endl;
-        return false;
-    }
-    return true;
-}
-
-/************************************************************************/
 /*
- * Note: commands can be oprefixed with "<accountname>:" as the first
+ * Note: commands can be prefixed with "<accountname>:" as the first
  * word (even if it doesn't make sense, like "account: help").
  */
 
-void CLI::command(std::string_view line)
+void CLI::command(const std::string& line)
 {
     std::vector<SteamBot::ClientInfo*> clients;
 
-    auto words=getWords(line);
+    auto args=boost::program_options::split_unix(line);
 
-    if (words.size()>0)
+    if (args.size()>0)
     {
-        if (words[0].size()>0 && words[0].back()==':')
+        if (args[0].size()>0 && args[0].back()==':')
         {
-            auto name=std::move(words[0]);
+            auto name=std::move(args[0]);
             name.pop_back();
-            words.erase(words.begin());
+            args.erase(args.begin());
 
             clients=expandAccountName(name);
             if (clients.empty())
@@ -163,44 +188,68 @@ void CLI::command(std::string_view line)
         }
     }
 
-    if (words.size()>0)
+    if (args.size()>0)
     {
-        for (const auto& command : commands)
+        auto iterator=getCommands().find(args[0]);
+        if (iterator!=getCommands().end())
         {
-            if (command->command==words[0])
+            args.erase(args.begin());
+
+            auto& command=*(iterator->second);
+
+            bool parseSuccess=false;
+            boost::program_options::variables_map options;
+            try
             {
-                if (command->needsAccount)
+                boost::program_options::basic_command_line_parser parser(args);
+                parser.options(command.options());
+                boost::program_options::store(parser.run(), options);
+                parseSuccess=true;
+            }
+            catch(...)
+            {
+            }
+
+            if (parseSuccess)
+            {
+                auto execute=command.makeExecute(*this);
+                if (execute->init(options))
                 {
-                    if (clients.empty())
+                    if (command.global())
                     {
-                        std::cout << "no current account; select one first or specify an account name" << std::endl;
-                        return;
+                        execute->execute(nullptr);
                     }
-
-                    bool first=true;
-                    for (SteamBot::ClientInfo* clientInfo : clients)
+                    else
                     {
-                        if (!first)
+                        if (!clients.empty())
                         {
-                            boost::this_fiber::sleep_for(std::chrono::seconds(2));
+                            std::chrono::seconds delay(0);
+                            for (SteamBot::ClientInfo* clientInfo : clients)
+                            {
+                                // ToDo: add some trickery to run execute() on the client thread, but
+                                // only for commands that are not "launch"
+                                boost::this_fiber::sleep_for(delay);
+                                execute->execute(clientInfo);
+                                delay+=std::chrono::seconds(2);
+                            }
                         }
-                        first=false;
-
-                        if (!executeCommand(clientInfo, command.get(), words))
+                        else
                         {
-                            break;
+                            std::cout << "no current account; select one first or specify an account name" << std::endl;
                         }
                     }
                 }
-                else
-                {
-                    executeCommand(nullptr, command.get(), words);
-                }
-                return;
+            }
+            else
+            {
+                command.print(std::cout);
             }
         }
-        std::cout << "unknown command: \"" << words[0] << "\"" << std::endl;
-        showHelp();
+        else
+        {
+            std::cout << "unknown command: \"" << args[0] << "\"" << std::endl;
+            listCommands();
+        }
     }
 }
 
@@ -239,17 +288,4 @@ void CLI::run()
     {
         ui.manager->setMode(ManagerBase::Mode::NoInput);
     }
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useCommonCommands()
-{
-    useHelpCommand();
-    useExitCommand();
-    useStatusCommand();
-    useSelectCommand();
-    useLaunchCommand();
-    useCreateCommand();
-    useQuitCommand();
 }

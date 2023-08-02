@@ -18,6 +18,7 @@
  */
 
 #include "UI/CLI.hpp"
+#include "UI/Command.hpp"
 
 #include "../Helpers.hpp"
 
@@ -25,27 +26,48 @@
 
 namespace
 {
-    class ExitCommand : public CLI::CLICommandBase
+    class ExitCommand : public SteamBot::UI::CommandBase
     {
     public:
-        ExitCommand(CLI& cli_)
-            : CLICommandBase(cli_, "EXIT", "", "Exit the bot", false)
+        virtual bool global() const
         {
+            return true;
         }
 
-        virtual ~ExitCommand() =default;
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("EXIT");
+            return string;
+        }
+
+        virtual const boost::program_options::options_description& options() const override
+        {
+            static const boost::program_options::options_description options;
+            return options;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>& words) override
+        class Execute : public ExecuteBase
         {
-            if (words.size()>1) return false;
+        public:
+            using ExecuteBase::ExecuteBase;
 
-            cli.quit=true;
-            return true;
+            virtual ~Execute() =default;
+
+        public:
+            virtual void execute(SteamBot::ClientInfo*) const
+            {
+                cli.quit=true;
+            }
+        };
+
+        virtual std::unique_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_unique<Execute>(cli);
         }
     };
 
-    ExitCommand::InitClass<ExitCommand> init;
+    ExitCommand::Init<ExitCommand> init;
 }
 
 /************************************************************************/
