@@ -100,12 +100,12 @@ namespace
 std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
 {
     SteamBot::UI::CLI::useExitCommand();
+    SteamBot::UI::CLI::useLaunchCommand();
 
 #if 0
     useHelpCommand();
     useStatusCommand();
     useSelectCommand();
-    useLaunchCommand();
     useCreateCommand();
     useQuitCommand();
 #endif
