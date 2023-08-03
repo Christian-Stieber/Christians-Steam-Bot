@@ -61,7 +61,7 @@ namespace SteamBot
         public:
             SteamBot::ClientInfo* getAccount() const;
             SteamBot::ClientInfo* getAccount(std::string_view) const;
-            void listCommands();
+            void printHelp(const std::string*);
             void command(const std::string&);
 
             static std::vector<std::string> getWords(std::string_view);

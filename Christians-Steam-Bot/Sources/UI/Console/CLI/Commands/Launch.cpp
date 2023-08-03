@@ -42,12 +42,6 @@ namespace
             return string;
         }
 
-        virtual const boost::program_options::options_description& options() const override
-        {
-            static const boost::program_options::options_description options;
-            return options;
-        }
-
     public:
         class Execute : public ExecuteBase
         {

@@ -56,6 +56,44 @@ static const auto& getCommands()
 
 /************************************************************************/
 
+const boost::program_options::positional_options_description* SteamBot::UI::CommandBase::positionals() const
+{
+    return nullptr;
+}
+
+/************************************************************************/
+
+const boost::program_options::options_description* SteamBot::UI::CommandBase::options() const
+{
+    return nullptr;
+}
+
+/************************************************************************/
+
+bool SteamBot::UI::CommandBase::parse(const std::vector<std::string>& args, boost::program_options::variables_map& variables) const
+{
+    try
+    {
+        if (auto desc=options())
+        {
+            boost::program_options::basic_command_line_parser parser(args);
+            parser.options(*desc);
+            if (auto positional=positionals())
+            {
+                parser.positional(*positional);
+            }
+            boost::program_options::store(parser.run(), variables);
+        }
+        return true;
+    }
+    catch(...)
+    {
+        return false;
+    }
+}
+
+/************************************************************************/
+
 void SteamBot::UI::CommandBase::print(std::ostream& stream) const
 {
     if (!global())
@@ -65,30 +103,33 @@ void SteamBot::UI::CommandBase::print(std::ostream& stream) const
 
     stream << command();
 
-    size_t maxLength=0;
-    std::vector<std::string> strings;
+    if (options())
     {
-        strings.reserve(options().options().size());
-        for (const auto& option : options().options())
+        size_t maxLength=0;
+        std::vector<std::string> strings;
         {
-            strings.push_back(option->format_parameter());
-
-            size_t length=strings.back().size();
-            if (length>maxLength)
+            strings.reserve(options()->options().size());
+            for (const auto& option : options()->options())
             {
-                maxLength=length;
+                strings.push_back(option->format_name());
+
+                size_t length=strings.back().size();
+                if (length>maxLength)
+                {
+                    maxLength=length;
+                }
             }
         }
-    }
 
-    for (size_t i=0; i<strings.size(); i++)
-    {
-        stream << "\n   " << strings[i];
-        for (size_t tab=maxLength-strings[i].size(); tab>0; tab--)
+        for (size_t i=0; i<strings.size(); i++)
         {
-            stream << " ";
+            stream << "\n   " << strings[i];
+            for (size_t tab=maxLength-strings[i].size(); tab>0; tab--)
+            {
+                stream << " ";
+            }
+            stream << " : " << options()->options()[i]->description();
         }
-        stream << " : " << options().options()[i]->description();
     }
 
     stream << std::endl;
@@ -96,14 +137,31 @@ void SteamBot::UI::CommandBase::print(std::ostream& stream) const
 
 /************************************************************************/
 
-void CLI::listCommands()
+void CLI::printHelp(const std::string* command)
 {
-    std::cout << "valid commands:";
-    for (const auto& command : getCommands())
+    const auto& commands=getCommands();
+
+    if (command!=nullptr)
     {
-        std::cout << "\n   " << command.first;
+        auto iterator=commands.find(*command);
+        if (iterator!=commands.end())
+        {
+            iterator->second->print(std::cout);
+        }
+        else
+        {
+            std::cout << "unknown command \"" << *command << "\"" << std::endl;
+        }
     }
-    std::cout << std::endl;
+    else
+    {
+        std::cout << "valid commands:";
+        for (const auto& command : commands)
+        {
+            std::cout << "\n   " << command.first;
+        }
+        std::cout << std::endl;
+    }
 }
 
 /************************************************************************/
@@ -197,20 +255,8 @@ void CLI::command(const std::string& line)
 
             auto& command=*(iterator->second);
 
-            bool parseSuccess=false;
             boost::program_options::variables_map options;
-            try
-            {
-                boost::program_options::basic_command_line_parser parser(args);
-                parser.options(command.options());
-                boost::program_options::store(parser.run(), options);
-                parseSuccess=true;
-            }
-            catch(...)
-            {
-            }
-
-            if (parseSuccess)
+            if (command.parse(args, options))
             {
                 auto execute=command.makeExecute(*this);
                 if (execute->init(options))
@@ -248,7 +294,7 @@ void CLI::command(const std::string& line)
         else
         {
             std::cout << "unknown command: \"" << args[0] << "\"" << std::endl;
-            listCommands();
+            printHelp(nullptr);
         }
     }
 }
