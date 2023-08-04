@@ -109,9 +109,47 @@ void SteamBot::UI::CommandBase::print(std::ostream& stream) const
         std::vector<std::string> strings;
         {
             strings.reserve(options()->options().size());
+
+            std::string optional;
+            if (auto positional=positionals())
+            {
+                if (positional->max_total_count()==std::numeric_limits<unsigned>::max())
+                {
+                    optional=positional->name_for_position(100);
+                }
+            }
+
             for (const auto& option : options()->options())
             {
-                strings.push_back(option->format_name());
+                {
+                    std::string string;
+
+                    {
+                        std::string name=option->format_name();
+                        if (option->long_name()==optional)
+                        {
+                            string='[';
+                            string.append(std::move(name));
+                            string+=']';
+                            optional.clear();
+                        }
+                        else
+                        {
+                            string=std::move(name);
+                        }
+                    }
+
+                    {
+                        std::string parameter=option->format_parameter();
+                        if (!parameter.empty())
+                        {
+                            string.append(" ");
+                            string.append(std::move(parameter));
+                        }
+                    }
+
+                    strings.push_back(std::move(string));
+                }
 
                 size_t length=strings.back().size();
                 if (length>maxLength)

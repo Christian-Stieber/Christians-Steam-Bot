@@ -47,7 +47,7 @@ namespace
         {
             static auto const positional=[](){
                 auto positional=new boost::program_options::positional_options_description();
-                positional->add("tradeoffer", 1);
+                positional->add("tradeoffer", -1);
                 return positional;
             }();
             return positional;
