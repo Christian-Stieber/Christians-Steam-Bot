@@ -105,9 +105,3 @@ namespace
 
     HelpCommand::Init<HelpCommand> init;
 }
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useHelpCommand()
-{
-}

@@ -99,11 +99,7 @@ namespace
 
 std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
 {
-    SteamBot::UI::CLI::useExitCommand();
-    SteamBot::UI::CLI::useLaunchCommand();
-
 #if 0
-    useHelpCommand();
     useStatusCommand();
     useSelectCommand();
     useCreateCommand();
@@ -119,7 +115,6 @@ std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
     SteamBot::UI::CLI::useSaleEventCommand();
     SteamBot::UI::CLI::useListInventoryCommand();
     SteamBot::UI::CLI::useSendInventoryCommand();
-    SteamBot::UI::CLI::useAcceptTradeCommand();
     SteamBot::UI::CLI::useDeclineTradeCommand();
     SteamBot::UI::CLI::useCancelTradeCommand();
     SteamBot::UI::CLI::useListTradeOffersCommand();

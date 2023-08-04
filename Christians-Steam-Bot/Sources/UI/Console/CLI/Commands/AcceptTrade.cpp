@@ -18,6 +18,7 @@
  */
 
 #include "UI/CLI.hpp"
+#include "UI/Command.hpp"
 #include "../Helpers.hpp"
 
 #include "Modules/Executor.hpp"
@@ -28,61 +29,87 @@
 
 namespace
 {
-    class AcceptTradeCommand : public CLI::CLICommandBase
+    class AcceptTradeCommand : public SteamBot::UI::CommandBase
     {
     public:
-        AcceptTradeCommand(CLI& cli_)
-            : CLICommandBase(cli_, "accept-trade", "<tradeofferid>", "accept a trade", true)
+        virtual bool global() const
         {
+            return false;
         }
 
-        virtual ~AcceptTradeCommand() =default;
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("accept-trade");
+            return string;
+        }
+
+        virtual const boost::program_options::positional_options_description* positionals() const override
+        {
+            static auto const positional=[](){
+                auto positional=new boost::program_options::positional_options_description();
+                positional->add("tradeoffer", 1);
+                return positional;
+            }();
+            return positional;
+        }
+
+        virtual const boost::program_options::options_description* options() const override
+        {
+            static auto const options=[](){
+                auto options=new boost::program_options::options_description();
+                options->add_options()
+                    ("tradeoffer",
+                     boost::program_options::value<SteamBot::TradeOfferID>()->value_name("tradeoffer-id")->required(),
+                     "tradeoffer to accept")
+                    ;
+                return options;
+            }();
+            return options;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>&) override;
+        class Execute : public ExecuteBase
+        {
+        private:
+            SteamBot::TradeOfferID tradeofferId=SteamBot::TradeOfferID::None;
+
+        public:
+            using ExecuteBase::ExecuteBase;
+
+            virtual ~Execute() =default;
+
+        public:
+            virtual bool init(const boost::program_options::variables_map& options) override
+            {
+                tradeofferId=options["tradeoffer"].as<SteamBot::TradeOfferID>();
+                return true;
+            }
+
+            virtual void execute(SteamBot::ClientInfo* clientInfo) const override
+            {
+                bool success=false;
+                if (auto client=clientInfo->getClient())
+                {
+                    SteamBot::Modules::Executor::execute(client, [this, &success](SteamBot::Client&) {
+                        success=SteamBot::acceptTrade(tradeofferId);
+                    });
+                }
+                if (success)
+                {
+                    std::cout << "accepted trade " << toInteger(tradeofferId) << std::endl;
+                }
+                else
+                {
+                    std::cout << "failed to accept trade " << toInteger(tradeofferId) << std::endl;
+                }
+            }
+        };
+
+        virtual std::unique_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_unique<Execute>(cli);
+        }
     };
 
-    AcceptTradeCommand::InitClass<AcceptTradeCommand> init;
-}
-
-/************************************************************************/
-
-bool AcceptTradeCommand::execute(SteamBot::ClientInfo* clientInfo, std::vector<std::string>& words)
-{
-    if (words.size()!=2)
-    {
-        return false;
-    }
-
-    SteamBot::TradeOfferID tradeOfferId=SteamBot::TradeOfferID::None;
-    if (SteamBot::parseNumber(words[1], tradeOfferId))
-    {
-        bool success=false;
-        if (auto client=clientInfo->getClient())
-        {
-            SteamBot::Modules::Executor::execute(client, [tradeOfferId, &success](SteamBot::Client&) {
-                success=SteamBot::acceptTrade(tradeOfferId);
-            });
-        }
-        if (success)
-        {
-            std::cout << "accepted trade" << std::endl;
-        }
-        else
-        {
-            std::cout << "failed to accept trade" << std::endl;
-        }
-    }
-    else
-    {
-        std::cout << "invalid trade offer id \"" << words[1] << "\"" << std::endl;
-    }
-
-    return true;
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useAcceptTradeCommand()
-{
+    AcceptTradeCommand::Init<AcceptTradeCommand> init;
 }

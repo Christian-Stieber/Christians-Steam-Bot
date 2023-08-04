@@ -68,34 +68,6 @@ namespace SteamBot
 
         public:
             void run();
-
-        public:
-            static void useHelpCommand();
-            static void useExitCommand();
-            static void useStatusCommand();
-            static void useLaunchCommand();
-            static void useCreateCommand();
-            static void useSelectCommand();
-            static void useQuitCommand();
-
-            static void useListGamesCommand();
-            static void usePlayStopGameCommands();
-            static void useAddLicenseCommand();
-            static void useClearQueueCommand();
-            static void useSettingsCommand();
-            static void useListInventoryCommand();
-            static void useSendInventoryCommand();
-            static void useAcceptTradeCommand();
-            static void useDeclineTradeCommand();
-            static void useCancelTradeCommand();
-            static void useListTradeOffersCommand();
-            static void useCreateAddRemoveGroupCommands();
-            static void useListGroupsCommand();
-
-            static void useSaleEventCommand();
-            static void useSaleStickerCommand();
-            static void useSaleQueueCommand();
-
         };
     }
 }

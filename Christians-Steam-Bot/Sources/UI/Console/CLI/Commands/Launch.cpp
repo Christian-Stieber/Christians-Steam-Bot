@@ -70,9 +70,3 @@ namespace
 
     LaunchCommand::Init<LaunchCommand> init;
 }
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useLaunchCommand()
-{
-}

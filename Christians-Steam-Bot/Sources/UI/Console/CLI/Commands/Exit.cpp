@@ -63,9 +63,3 @@ namespace
 
     ExitCommand::Init<ExitCommand> init;
 }
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useExitCommand()
-{
-}
