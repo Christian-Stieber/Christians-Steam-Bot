@@ -108,7 +108,6 @@ std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
 
 #if 0
     SteamBot::UI::CLI::useCommonCommands();
-    SteamBot::UI::CLI::useListGamesCommand();
     SteamBot::UI::CLI::usePlayStopGameCommands();
     SteamBot::UI::CLI::useAddLicenseCommand();
     SteamBot::UI::CLI::useClearQueueCommand();

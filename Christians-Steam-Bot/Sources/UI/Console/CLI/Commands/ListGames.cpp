@@ -18,6 +18,7 @@
  */
 
 #include "UI/CLI.hpp"
+#include "UI/Command.hpp"
 
 #include "../Helpers.hpp"
 
@@ -26,7 +27,6 @@
 #include "Helpers/Time.hpp"
 #include "Modules/PackageData.hpp"
 
-#include <regex>
 #include <iomanip>
 
 /************************************************************************/
@@ -37,21 +37,84 @@ typedef CLI::Helpers::OwnedGames OwnedGames;
 
 namespace
 {
-    class ListGamesCommand : public CLI::CLICommandBase
+    class ListGamesCommand : public SteamBot::UI::CommandBase
     {
     public:
-        ListGamesCommand(CLI& cli_)
-            : CLICommandBase(cli_, "list-games", "[<regex>]", "list owned games", true)
+        ListGamesCommand()
         {
+            SteamBot::Modules::OwnedGames::use();
         }
 
-        virtual ~ListGamesCommand() =default;
+    public:
+        virtual bool global() const
+        {
+            return false;
+        }
+
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("list-games");
+            return string;
+        }
+
+        virtual const boost::program_options::positional_options_description* positionals() const override
+        {
+            static auto const positional=[](){
+                auto positional=new boost::program_options::positional_options_description();
+                positional->add("games", -1);
+                return positional;
+            }();
+            return positional;
+        }
+
+        virtual const boost::program_options::options_description* options() const override
+        {
+            static auto const options=[](){
+                auto options=new boost::program_options::options_description();
+                options->add_options()
+                    ("games",
+                     boost::program_options::value<SteamBot::OptionRegex>()->value_name("regex"),
+                     "games to list")
+                    ;
+                return options;
+            }();
+            return options;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>&) override;
+        class Execute : public ExecuteBase
+        {
+        private:
+            std::optional<SteamBot::OptionRegex> gamesRegex;
+
+        public:
+            using ExecuteBase::ExecuteBase;
+
+            virtual ~Execute() =default;
+
+        private:
+            void outputGameList(SteamBot::ClientInfo&, const OwnedGames::Ptr::element_type&) const;
+
+        public:
+            virtual bool init(const boost::program_options::variables_map& options) override
+            {
+                if (options.count("games"))
+                {
+                    gamesRegex=options["games"].as<SteamBot::OptionRegex>();
+                }
+                return true;
+            }
+
+            virtual void execute(SteamBot::ClientInfo* clientInfo) const override;
+        };
+
+        virtual std::unique_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_unique<Execute>(cli);
+        }
     };
 
-    ListGamesCommand::InitClass<ListGamesCommand> init;
+    ListGamesCommand::Init<ListGamesCommand> init;
 }
 
 /************************************************************************/
@@ -65,16 +128,15 @@ static void print(const SteamBot::Modules::LicenseList::Whiteboard::Licenses::Li
 
 /************************************************************************/
 
-static void outputGameList(SteamBot::ClientInfo& clientInfo, const OwnedGames::Ptr::element_type& ownedGames, std::string_view pattern)
+void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo, const OwnedGames::Ptr::element_type& ownedGames) const
 {
     typedef std::shared_ptr<const OwnedGames::GameInfo> ItemType;
 
     std::vector<ItemType> games;
     {
-        std::regex regex(pattern.begin(), pattern.end(), std::regex_constants::icase);
         for (const auto& item : ownedGames.games)
         {
-            if (std::regex_search(item.second->name, regex))
+            if (!gamesRegex || std::regex_search(item.second->name, *gamesRegex))
             {
                 games.emplace_back(item.second);
             }
@@ -101,14 +163,14 @@ static void outputGameList(SteamBot::ClientInfo& clientInfo, const OwnedGames::P
         if (licenses.size()==1)
         {
             std::cout << "; ";
-            print(*(licenses.front()));
+            ::print(*(licenses.front()));
         }
         else
         {
             for (auto& license : licenses)
             {
                 std::cout << "\n          ";
-                print(*license);
+                ::print(*license);
             }
         }
         std::cout << "\n";
@@ -118,36 +180,14 @@ static void outputGameList(SteamBot::ClientInfo& clientInfo, const OwnedGames::P
 
 /************************************************************************/
 
-bool ListGamesCommand::execute(SteamBot::ClientInfo* clientInfo, std::vector<std::string>& words)
+void ListGamesCommand::Execute::execute(SteamBot::ClientInfo* clientInfo) const
 {
-    std::string_view pattern;
-
-    if (words.size()==2)
-    {
-        pattern=words[1];
-    }
-    else if (words.size()==1)
-    {
-    }
-    else
-    {
-        return false;
-    }
-
     if (auto ownedGames=CLI::Helpers::getOwnedGames(*clientInfo))
     {
-        outputGameList(*clientInfo, *ownedGames, pattern);
+        outputGameList(*clientInfo, *ownedGames);
     }
     else
     {
         std::cout << "gamelist not available for \"" << clientInfo->accountName << "\"" << std::endl;
     }
-
-    return true;
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useListGamesCommand()
-{
 }

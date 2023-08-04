@@ -26,6 +26,7 @@
 #include <string_view>
 #include <memory>
 #include <istream>
+#include <regex>
 
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -98,11 +99,42 @@ namespace SteamBot
 }
 
 /************************************************************************/
+/*
+ * when using custom value types, boost program_options reads them
+ * from istreams.
+ */
+
+/************************************************************************/
 
 namespace SteamBot
 {
     template <typename T> std::istream& operator>>(std::istream& stream, T& value) requires(std::is_enum_v<T>)
     {
         return stream >> reinterpret_cast<std::underlying_type_t<T>&>(value);
+    }
+}
+
+/************************************************************************/
+
+namespace SteamBot
+{
+    class OptionRegex : public std::regex
+    {
+    public:
+        using std::regex::regex;
+
+    public:
+        OptionRegex& operator=(std::regex&& other)
+        {
+            std::regex::operator=(std::move(other));
+            return *this;
+        }
+    };
+
+    inline std::istream& operator>>(std::istream& stream, OptionRegex& value)
+    {
+        // https://stackoverflow.com/questions/3203452/how-to-read-entire-stream-into-a-stdstring
+        value=std::regex(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>(), std::regex_constants::icase);
+        return stream;
     }
 }
