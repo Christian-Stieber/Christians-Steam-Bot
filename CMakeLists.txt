@@ -14,7 +14,7 @@ add_subdirectory(Christians-Steam-Framework)
 list(APPEND SRCS Main)
 
 list(APPEND SRCS UI/Console/Console UI/Console/Manager_Linux)
-list(APPEND SRCS UI/Console/CLI/CLI UI/Console/CLI/Helpers UI/Console/CLI/TokenizeLine)
+list(APPEND SRCS UI/Console/CLI/CLI UI/Console/CLI/Helpers)
 list(APPEND SRCS UI/Console/CLI/Commands/Exit UI/Console/CLI/Commands/Launch UI/Console/CLI/Commands/Help)
 list(APPEND SRCS UI/Console/CLI/Commands/AcceptTrade)
 list(APPEND SRCS UI/Console/CLI/Commands/ListGames)
