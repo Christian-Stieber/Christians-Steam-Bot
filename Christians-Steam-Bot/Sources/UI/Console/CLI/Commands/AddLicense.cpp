@@ -18,6 +18,7 @@
  */
 
 #include "UI/CLI.hpp"
+#include "UI/Command.hpp"
 #include "../Helpers.hpp"
 
 #include "Modules/Executor.hpp"
@@ -31,54 +32,98 @@ typedef SteamBot::Modules::AddFreeLicense::Messageboard::AddLicense AddLicense;
 
 namespace
 {
-    class AddLicenseCommand : public CLI::CLICommandBase
+    class AddLicenseCommand : public SteamBot::UI::CommandBase
     {
     public:
-        AddLicenseCommand(CLI& cli_)
-            : CLICommandBase(cli_, "add-license", "<appid>", "add a (free) license", true)
+        virtual bool global() const
         {
+            return false;
         }
 
-        virtual ~AddLicenseCommand() =default;
+        virtual const boost::program_options::positional_options_description* positionals() const override
+        {
+            static auto const positional=[](){
+                auto positional=new boost::program_options::positional_options_description();
+                positional->add("appid", -1);
+                return positional;
+            }();
+            return positional;
+        }
+
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("add-license");
+            return string;
+        }
+
+        virtual const boost::program_options::options_description* options() const override
+        {
+            static auto const options=[this](){
+                auto options=new boost::program_options::options_description();
+                options->add_options()
+                    ("appid",
+                     boost::program_options::value<std::vector<SteamBot::AppID>>()->value_name("app-id")->multitoken()->required(),
+                     "(free) appids to add")
+                    ;
+                return options;
+            }();
+            return options;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>&) override;
-    };
-
-    AddLicenseCommand::InitClass<AddLicenseCommand> init;
-}
-
-/************************************************************************/
-
-bool AddLicenseCommand::execute(SteamBot::ClientInfo* clientInfo, std::vector<std::string>& words)
-{
-    if (words.size()==2)
-    {
-        uint64_t appId;
-        if (CLI::Helpers::parseNumber(words[1], appId))
+        class Execute : public ExecuteBase
         {
-            if (auto client=clientInfo->getClient())
-            {
-                bool success=SteamBot::Modules::Executor::execute(std::move(client), [appId](SteamBot::Client&) mutable {
-                    AddLicense::add(static_cast<SteamBot::AppID>(appId));
-                });
+        private:
+            std::vector<SteamBot::AppID> appIds;
 
-                if (success)
+        public:
+            using ExecuteBase::ExecuteBase;
+
+            virtual ~Execute() =default;
+
+        public:
+            virtual bool init(const boost::program_options::variables_map& options) override
+            {
+                if (options.count("appid"))
                 {
-                    std::cout << "I've asked Steam to add the license " << appId << " to your account" << std::endl;
+                    appIds=options["appid"].as<std::vector<SteamBot::AppID>>();
+                    return true;
+                }
+                return false;
+            }
+
+            virtual void execute(SteamBot::ClientInfo* clientInfo) const override
+            {
+                if (auto client=clientInfo->getClient())
+                {
+                    bool success=SteamBot::Modules::Executor::execute(std::move(client), [this](SteamBot::Client&) {
+                        std::chrono::seconds delay(0);
+                        for (const auto appId : appIds)
+                        {
+                            boost::this_fiber::sleep_for(delay);
+                            SteamBot::UI::OutputText() << "ClI: adding license " << toInteger(appId);
+                            AddLicense::add(appId);
+                            delay=std::chrono::seconds(1);
+                        }
+                    });
+                    if (success)
+                    {
+                        std::cout << "I've asked Steam to add ";
+                        for (const auto appId : appIds)
+                        {
+                            std::cout << " " << toInteger(appId);
+                        }
+                        std::cout << " to your account" << std::endl;
+                    }
                 }
             }
+        };
+
+        virtual std::unique_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_unique<Execute>(cli);
         }
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
+    };
 
-/************************************************************************/
-
-void SteamBot::UI::CLI::useAddLicenseCommand()
-{
+    AddLicenseCommand::Init<AddLicenseCommand> init;
 }

@@ -323,6 +323,10 @@ void CLI::command(const std::string& line)
                         }
                     }
                 }
+                else
+                {
+                    command.print(std::cout);
+                }
             }
             else
             {
