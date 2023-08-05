@@ -22,25 +22,58 @@
 #include "../Helpers.hpp"
 
 #include "Modules/Executor.hpp"
-#include "Helpers/ParseNumber.hpp"
 #include "AcceptTrade.hpp"
 
 /************************************************************************/
 
 namespace
 {
-    class AcceptTradeCommand : public SteamBot::UI::CommandBase
+    typedef bool(*ActionFunction)(SteamBot::TradeOfferID);
+
+    struct AcceptInfo
+    {
+        static constexpr std::string_view command{"accept-trade"};
+        static constexpr char offerDesc[]="tradeoffer to accept";
+
+        static constexpr ActionFunction action=&SteamBot::acceptTrade;
+
+        static constexpr char success[]="accepted";
+        static constexpr char failure[]="accept";
+    };
+
+    struct DeclineInfo
+    {
+        static constexpr std::string_view command{"decline-trade"};
+        static constexpr char offerDesc[]="tradeoffer to decline";
+
+        static constexpr ActionFunction action=&SteamBot::declineTrade;
+
+        static constexpr char success[]="declined";
+        static constexpr char failure[]="decline";
+    };
+
+    struct CancelInfo
+    {
+        static constexpr std::string_view command{"cancel-trade"};
+        static constexpr char offerDesc[]="tradeoffer to cancel";
+
+        static constexpr ActionFunction action=&SteamBot::cancelTrade;
+
+        static constexpr char success[]="cancelled";
+        static constexpr char failure[]="cancele";
+    };
+}
+
+/************************************************************************/
+
+namespace
+{
+    template <typename INFO> class TradeCommand : public SteamBot::UI::CommandBase
     {
     public:
         virtual bool global() const
         {
             return false;
-        }
-
-        virtual const std::string_view& command() const override
-        {
-            static const std::string_view string("accept-trade");
-            return string;
         }
 
         virtual const boost::program_options::positional_options_description* positionals() const override
@@ -53,14 +86,19 @@ namespace
             return positional;
         }
 
+        virtual const std::string_view& command() const override
+        {
+            return INFO::command;
+        }
+
         virtual const boost::program_options::options_description* options() const override
         {
-            static auto const options=[](){
+            static auto const options=[this](){
                 auto options=new boost::program_options::options_description();
                 options->add_options()
                     ("tradeoffer",
                      boost::program_options::value<SteamBot::TradeOfferID>()->value_name("tradeoffer-id")->required(),
-                     "tradeoffer to accept")
+                     INFO::offerDesc)
                     ;
                 return options;
             }();
@@ -91,16 +129,16 @@ namespace
                 if (auto client=clientInfo->getClient())
                 {
                     SteamBot::Modules::Executor::execute(client, [this, &success](SteamBot::Client&) {
-                        success=SteamBot::acceptTrade(tradeofferId);
+                        success=(*INFO::action)(tradeofferId);
                     });
                 }
                 if (success)
                 {
-                    std::cout << "accepted trade " << toInteger(tradeofferId) << std::endl;
+                    std::cout << INFO::success << " trade " << toInteger(tradeofferId) << std::endl;
                 }
                 else
                 {
-                    std::cout << "failed to accept trade " << toInteger(tradeofferId) << std::endl;
+                    std::cout << "failed to " << INFO::failure << " trade " << toInteger(tradeofferId) << std::endl;
                 }
             }
         };
@@ -111,5 +149,7 @@ namespace
         }
     };
 
-    AcceptTradeCommand::Init<AcceptTradeCommand> init;
+    SteamBot::UI::CommandBase::Init<TradeCommand<AcceptInfo>> initAccept;
+    SteamBot::UI::CommandBase::Init<TradeCommand<DeclineInfo>> initDecline;
+    SteamBot::UI::CommandBase::Init<TradeCommand<CancelInfo>> initCancel;
 }
