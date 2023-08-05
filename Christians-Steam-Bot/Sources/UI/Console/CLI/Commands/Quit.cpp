@@ -18,6 +18,7 @@
  */
 
 #include "UI/CLI.hpp"
+#include "UI/Command.hpp"
 #include "Modules/Executor.hpp"
 
 #include "../Helpers.hpp"
@@ -26,53 +27,53 @@
 
 namespace
 {
-    class QuitCommand : public CLI::CLICommandBase
+    class QuitCommand : public SteamBot::UI::CommandBase
     {
     public:
-        QuitCommand(CLI& cli_)
-            : CLICommandBase(cli_, "quit", "", "Quit a client", true)
+        virtual bool global() const
         {
+            return false;
         }
 
-        virtual ~QuitCommand() =default;
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("quit");
+            return string;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>&) override;
+        class Execute : public ExecuteBase
+        {
+        public:
+            using ExecuteBase::ExecuteBase;
+
+            virtual ~Execute() =default;
+
+        public:
+            virtual void execute(SteamBot::ClientInfo* clientInfo) const
+            {
+                if (auto client=clientInfo->getClient())
+                {
+                    bool success=SteamBot::Modules::Executor::execute(client, [](SteamBot::Client& client) {
+                        client.quit(false);
+                    });
+                    if (success)
+                    {
+                        std::cout << "requested client \"" << client->getClientInfo().accountName << "\" to terminate" << std::endl;
+                    }
+                }
+                if (cli.currentAccount==clientInfo)
+                {
+                    cli.currentAccount=nullptr;
+                }
+            }
+        };
+
+        virtual std::unique_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_unique<Execute>(cli);
+        }
     };
 
-    QuitCommand::InitClass<QuitCommand> init;
-}
-
-/************************************************************************/
-
-bool QuitCommand::execute(SteamBot::ClientInfo* clientInfo, std::vector<std::string>& words)
-{
-    if (words.size()==1)
-    {
-        if (auto client=clientInfo->getClient())
-        {
-            bool success=SteamBot::Modules::Executor::execute(client, [](SteamBot::Client& client) {
-                client.quit(false);
-            });
-            if (success)
-            {
-                std::cout << "requested client \"" << client->getClientInfo().accountName << "\" to terminate" << std::endl;
-            }
-        }
-        if (cli.currentAccount==clientInfo)
-        {
-            cli.currentAccount=nullptr;
-        }
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useQuitCommand()
-{
+    QuitCommand::Init<QuitCommand> init;
 }
