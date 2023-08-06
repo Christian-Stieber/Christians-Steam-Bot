@@ -57,6 +57,12 @@ namespace
             return string;
         }
 
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("list games on account");
+            return string;
+        }
+
         virtual const boost::program_options::positional_options_description* positionals() const override
         {
             static auto const positional=[](){

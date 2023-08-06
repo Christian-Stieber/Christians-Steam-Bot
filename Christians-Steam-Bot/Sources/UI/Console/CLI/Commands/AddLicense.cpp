@@ -19,7 +19,6 @@
 
 #include "UI/CLI.hpp"
 #include "UI/Command.hpp"
-#include "../Helpers.hpp"
 
 #include "Modules/Executor.hpp"
 #include "Modules/AddFreeLicense.hpp"
@@ -53,6 +52,12 @@ namespace
         virtual const std::string_view& command() const override
         {
             static const std::string_view string("add-license");
+            return string;
+        }
+
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("add (free) games to account");
             return string;
         }
 

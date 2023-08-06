@@ -33,6 +33,7 @@ namespace
     struct AcceptInfo
     {
         static constexpr std::string_view command{"accept-trade"};
+        static constexpr std::string_view description{"accept an incoming trade"};
         static constexpr char offerDesc[]="tradeoffer to accept";
 
         static constexpr ActionFunction action=&SteamBot::acceptTrade;
@@ -44,6 +45,7 @@ namespace
     struct DeclineInfo
     {
         static constexpr std::string_view command{"decline-trade"};
+        static constexpr std::string_view description{"decline an incoming trade"};
         static constexpr char offerDesc[]="tradeoffer to decline";
 
         static constexpr ActionFunction action=&SteamBot::declineTrade;
@@ -55,6 +57,7 @@ namespace
     struct CancelInfo
     {
         static constexpr std::string_view command{"cancel-trade"};
+        static constexpr std::string_view description{"cancel an outgoing trade"};
         static constexpr char offerDesc[]="tradeoffer to cancel";
 
         static constexpr ActionFunction action=&SteamBot::cancelTrade;
@@ -89,6 +92,11 @@ namespace
         virtual const std::string_view& command() const override
         {
             return INFO::command;
+        }
+
+        virtual const std::string_view& description() const override
+        {
+            return INFO::description;
         }
 
         virtual const boost::program_options::options_description* options() const override

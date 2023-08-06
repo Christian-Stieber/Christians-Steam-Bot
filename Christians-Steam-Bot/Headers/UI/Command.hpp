@@ -63,6 +63,8 @@ namespace SteamBot
             virtual const boost::program_options::options_description* options() const;
             virtual const boost::program_options::positional_options_description* positionals() const;
 
+            virtual const std::string_view& description() const =0;			// short text: what does this command do
+
             bool parse(const std::vector<std::string>&, boost::program_options::variables_map&) const;
 
             void print(std::ostream&) const;

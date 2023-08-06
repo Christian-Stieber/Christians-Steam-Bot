@@ -19,9 +19,8 @@
 
 #include "UI/CLI.hpp"
 #include "UI/Command.hpp"
-#include "Modules/Executor.hpp"
 
-#include "../Helpers.hpp"
+#include "Modules/Executor.hpp"
 
 /************************************************************************/
 
@@ -38,6 +37,12 @@ namespace
         virtual const std::string_view& command() const override
         {
             static const std::string_view string("quit");
+            return string;
+        }
+
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("quit the client");
             return string;
         }
 

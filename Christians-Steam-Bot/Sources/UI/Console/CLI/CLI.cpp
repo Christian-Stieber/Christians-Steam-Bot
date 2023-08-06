@@ -193,10 +193,24 @@ void CLI::printHelp(const std::string* command)
     }
     else
     {
+        size_t maxLength=0;
+        for (const auto& command : commands)
+        {
+            if (command.first.size()>maxLength)
+            {
+                maxLength=command.first.size();
+            }
+        }
+
         std::cout << "valid commands:";
         for (const auto& command : commands)
         {
             std::cout << "\n   " << command.first;
+            for (size_t i=command.first.size(); i<maxLength; i++)
+            {
+                std::cout << " ";
+            }
+            std::cout << " : " << command.second->description();
         }
         std::cout << std::endl;
     }

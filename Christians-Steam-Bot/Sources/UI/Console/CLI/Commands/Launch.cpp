@@ -20,8 +20,6 @@
 #include "UI/CLI.hpp"
 #include "UI/Command.hpp"
 
-#include "../Helpers.hpp"
-
 #include "Client/Client.hpp"
 
 /************************************************************************/
@@ -39,6 +37,12 @@ namespace
         virtual const std::string_view& command() const override
         {
             static const std::string_view string("launch");
+            return string;
+        }
+
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("start an already configured client");
             return string;
         }
 

@@ -41,6 +41,12 @@ namespace
             return string;
         }
 
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("claim the current sale sticker");
+            return string;
+        }
+
     public:
         class Execute : public ExecuteBase
         {

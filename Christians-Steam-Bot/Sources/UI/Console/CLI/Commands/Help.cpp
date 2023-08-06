@@ -40,6 +40,12 @@ namespace
             return string;
         }
 
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("show command list or syntax");
+            return string;
+        }
+
         virtual const boost::program_options::positional_options_description* positionals() const override
         {
             static auto const positional=[](){

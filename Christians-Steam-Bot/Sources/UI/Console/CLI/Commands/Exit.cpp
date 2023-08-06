@@ -20,8 +20,6 @@
 #include "UI/CLI.hpp"
 #include "UI/Command.hpp"
 
-#include "../Helpers.hpp"
-
 /************************************************************************/
 
 namespace
@@ -37,6 +35,12 @@ namespace
         virtual const std::string_view& command() const override
         {
             static const std::string_view string("EXIT");
+            return string;
+        }
+
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("quit the bot");
             return string;
         }
 
