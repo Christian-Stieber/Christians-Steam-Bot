@@ -44,6 +44,4 @@ public:
 
     typedef SteamBot::Modules::LicenseList::Whiteboard::Licenses::LicenseInfo LicenseInfo;
     static std::vector<std::shared_ptr<const LicenseInfo>> getLicenseInfo(const SteamBot::ClientInfo&, SteamBot::AppID);
-
-    static bool parseNumber(std::string_view, uint64_t&);
 };
