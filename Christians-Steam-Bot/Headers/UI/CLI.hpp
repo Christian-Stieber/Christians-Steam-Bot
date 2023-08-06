@@ -23,6 +23,8 @@
 #include <memory>
 #include <vector>
 
+#include "UI/UI.hpp"
+
 /************************************************************************/
 
 namespace SteamBot

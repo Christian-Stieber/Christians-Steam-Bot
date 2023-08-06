@@ -18,7 +18,7 @@
  */
 
 #include "UI/CLI.hpp"
-#include "../Helpers.hpp"
+#include "UI/Command.hpp"
 
 #include "Modules/SaleSticker.hpp"
 #include "Modules/Executor.hpp"
@@ -27,50 +27,51 @@
 
 namespace
 {
-    class SaleStickerCommand : public CLI::CLICommandBase
+    class SaleStickerCommand : public SteamBot::UI::CommandBase
     {
     public:
-        SaleStickerCommand(CLI& cli_)
-            : CLICommandBase(cli_, "sale-sticker", "", "claim a sale sticker", true)
+        virtual bool global() const
         {
+            return false;
         }
 
-        virtual ~SaleStickerCommand() =default;
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("sale-sticker");
+            return string;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>&) override;
+        class Execute : public ExecuteBase
+        {
+        public:
+            using ExecuteBase::ExecuteBase;
+
+            virtual ~Execute() =default;
+
+        public:
+            virtual void execute(SteamBot::ClientInfo* clientInfo) const
+            {
+                if (auto client=clientInfo->getClient())
+                {
+                    bool success=SteamBot::Modules::Executor::executeWithFiber(client, [](SteamBot::Client& client) {
+                        SteamBot::UI::OutputText() << "ClI: requested sale sticker";
+                        auto json=SteamBot::SaleSticker::claim().toJson();
+                        SteamBot::UI::OutputText() << "Sale sticker: " << json;
+                    });
+                    if (success)
+                    {
+                        std::cout << "requested sale sticker for account " << client->getClientInfo().accountName << std::endl;
+                    }
+                }
+            }
+        };
+
+        virtual std::unique_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_unique<Execute>(cli);
+        }
     };
 
-    SaleStickerCommand::InitClass<SaleStickerCommand> init;
-}
-
-/************************************************************************/
-
-bool SaleStickerCommand::execute(SteamBot::ClientInfo* clientInfo, std::vector<std::string>& words)
-{
-    if (words.size()==1)
-    {
-        if (auto client=clientInfo->getClient())
-        {
-            bool success=SteamBot::Modules::Executor::executeWithFiber(client, [](SteamBot::Client& client) {
-                auto json=SteamBot::SaleSticker::claim().toJson();
-                SteamBot::UI::OutputText() << "Sale sticker: " << json;
-            });
-            if (success)
-            {
-                std::cout << "requested sale sticker for account " << client->getClientInfo().accountName << std::endl;
-            }
-        }
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useSaleStickerCommand()
-{
+    SaleStickerCommand::Init<SaleStickerCommand> init;
 }

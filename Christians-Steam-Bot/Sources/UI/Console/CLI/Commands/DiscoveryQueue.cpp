@@ -19,7 +19,6 @@
 
 #include "UI/CLI.hpp"
 #include "UI/Command.hpp"
-#include "../Helpers.hpp"
 
 #include "Modules/DiscoveryQueue.hpp"
 #include "Modules/Executor.hpp"
