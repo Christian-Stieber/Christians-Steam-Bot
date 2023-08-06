@@ -18,7 +18,7 @@
  */
 
 #include "UI/CLI.hpp"
-#include "../Helpers.hpp"
+#include "UI/Command.hpp"
 
 #include "AssetData.hpp"
 #include "Helpers/StringCompare.hpp"
@@ -35,51 +35,80 @@ typedef SteamBot::Inventory::Inventory Inventory;
 
 namespace
 {
-    struct Filters
-    {
-        std::string_view pattern;
-        bool tradable=false;
-    };
-}
-
-/************************************************************************/
-
-namespace
-{
-    class ListInventoryCommand : public CLI::CLICommandBase
+    class ListInventoryCommand : public SteamBot::UI::CommandBase
     {
     public:
-        ListInventoryCommand(CLI& cli_)
-            : CLICommandBase(cli_, "list-inventory", "[--tradable] [<regex>]", "list inventory", true)
+        virtual bool global() const
         {
+            return false;
         }
 
-        virtual ~ListInventoryCommand() =default;
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("list-inventory");
+            return string;
+        }
+
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("list steam inventory items");
+            return string;
+        }
+
+        virtual const boost::program_options::options_description* options() const override
+        {
+            static auto const options=[](){
+                auto options=new boost::program_options::options_description();
+                options->add_options()
+                    ("tradable", boost::program_options::bool_switch()->value_name("tradable")->default_value(false), "only tradable items")
+                    ("items", boost::program_options::value<SteamBot::OptionRegex>()->value_name("regex"), "items")
+                    ;
+                return options;
+            }();
+            return options;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>&) override;
+        class Execute : public ExecuteBase
+        {
+        private:
+            bool tradable=false;
+            std::optional<SteamBot::OptionRegex> itemsRegex;
+
+        public:
+            using ExecuteBase::ExecuteBase;
+
+            virtual ~Execute() =default;
+
+        private:
+            void outputInventory(const Inventory&) const;
+
+        public:
+            virtual bool init(const boost::program_options::variables_map& options) override
+            {
+                tradable=options["tradable"].as<bool>();
+                if (options.count("items"))
+                {
+                    itemsRegex=options["items"].as<SteamBot::OptionRegex>();
+                }
+                return true;
+            }
+
+            virtual void execute(SteamBot::ClientInfo*) const;
+        };
+
+        virtual std::shared_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_shared<Execute>(cli);
+        }
     };
 
-    ListInventoryCommand::InitClass<ListInventoryCommand> init;
+    ListInventoryCommand::Init<ListInventoryCommand> init;
 }
 
 /************************************************************************/
 
-static Inventory::Ptr getInventory(const SteamBot::ClientInfo& clientInfo)
-{
-    Inventory::Ptr result;
-    if (auto client=clientInfo.getClient())
-    {
-        SteamBot::Modules::Executor::execute(std::move(client), [&result](SteamBot::Client& client) mutable {
-            result=SteamBot::Inventory::get();
-        });
-    }
-    return result;
-}
-
-/************************************************************************/
-
-static void outputInventory(SteamBot::ClientInfo& clientInfo, const Inventory& inventory, const Filters& filters)
+void ListInventoryCommand::Execute::outputInventory(const Inventory& inventory) const
 {
     class Item
     {
@@ -96,14 +125,13 @@ static void outputInventory(SteamBot::ClientInfo& clientInfo, const Inventory& i
 
     std::vector<Item> items;
     {
-        std::regex regex(filters.pattern.begin(), filters.pattern.end(), std::regex_constants::icase);
         for (const auto& item : inventory.items)
         {
             if (auto assetInfo=SteamBot::AssetData::query(item))
             {
-                if (!filters.tradable || assetInfo->isTradable)
+                if (!tradable || assetInfo->isTradable)
                 {
-                    if (std::regex_search(assetInfo->name, regex) || std::regex_search(assetInfo->type, regex))
+                    if (!itemsRegex || std::regex_search(assetInfo->name, *itemsRegex) || std::regex_search(assetInfo->type, *itemsRegex))
                     {
                         items.emplace_back(item, assetInfo);
                     }
@@ -121,58 +149,46 @@ static void outputInventory(SteamBot::ClientInfo& clientInfo, const Inventory& i
         return result==std::weak_ordering::less;
     });
 
+    SteamBot::UI::OutputText output;
     for (const auto& item : items)
     {
-        std::cout << toInteger(item.inventoryItem->appId);
-        std::cout << "/" << toInteger(item.inventoryItem->contextId);
-        std::cout << "/" << toInteger(item.inventoryItem->assetId);
-        std::cout << ": ";
+        output << "\n";
+
+        output << toInteger(item.inventoryItem->appId);
+        output << "/" << toInteger(item.inventoryItem->contextId);
+        output << "/" << toInteger(item.inventoryItem->assetId);
+        output << ": ";
 
         if (item.inventoryItem->amount>1)
         {
-            std::cout << item.inventoryItem->amount << "× ";
+            output << item.inventoryItem->amount << "× ";
         }
 
-        std::cout << "\"" << item.assetInfo->type << "\" / \"" << item.assetInfo->name << "\"\n";
+        output << "\"" << item.assetInfo->type << "\" / \"" << item.assetInfo->name << "\"";
     }
-    std::cout << std::flush;
 }
 
 /************************************************************************/
 
-bool ListInventoryCommand::execute(SteamBot::ClientInfo* clientInfo, std::vector<std::string>& words)
+void ListInventoryCommand::Execute::execute(SteamBot::ClientInfo* clientInfo) const
 {
-    Filters filters;
-
-    for (size_t i=1; i<words.size(); i++)
+    if (auto client=clientInfo->getClient())
     {
-        const auto& word=words[i];
-        if (word=="--tradable")
+        bool success=SteamBot::Modules::Executor::executeWithFiber(client, [self=shared_from_this<Execute>()](SteamBot::Client& client) {
+            SteamBot::UI::OutputText() << "ClI: list inventory";
+            auto inventory=SteamBot::Inventory::get();
+            if (inventory)
+            {
+                self->outputInventory(*inventory);
+            }
+            else
+            {
+                SteamBot::UI::OutputText() << "inventory not available";
+            }
+        });
+        if (success)
         {
-            if (filters.tradable) return false;
-            filters.tradable=true;
-        }
-        else
-        {
-            if (filters.pattern.size()>0) return false;
-            filters.pattern=word;
+            std::cout << "started inventory loading for " << client->getClientInfo().accountName << std::endl;
         }
     }
-
-    if (auto inventory=getInventory(*clientInfo))
-    {
-        outputInventory(*clientInfo, *inventory, filters);
-    }
-    else
-    {
-        std::cout << "inventory not available for \"" << clientInfo->accountName << "\"" << std::endl;
-    }
-
-    return true;
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useListInventoryCommand()
-{
 }
