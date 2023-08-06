@@ -114,9 +114,9 @@ namespace
             virtual void execute(SteamBot::ClientInfo* clientInfo) const override;
         };
 
-        virtual std::unique_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        virtual std::shared_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
         {
-            return std::make_unique<Execute>(cli);
+            return std::make_shared<Execute>(cli);
         }
     };
 

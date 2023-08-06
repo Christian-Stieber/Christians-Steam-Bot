@@ -27,6 +27,7 @@
 #include <memory>
 #include <istream>
 #include <regex>
+#include <concepts>
 
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -71,7 +72,7 @@ namespace SteamBot
 
         public:
             // Note: execute() can be called on multiple clients concurrently!
-            class ExecuteBase
+            class ExecuteBase : public std::enable_shared_from_this<ExecuteBase>
             {
             public:
                 SteamBot::UI::CLI& cli;
@@ -90,9 +91,15 @@ namespace SteamBot
                 }
 
                 virtual void execute(SteamBot::ClientInfo*) const =0;
+
+            public:
+                template <std::derived_from<ExecuteBase> T> std::shared_ptr<const T> shared_from_this() const noexcept
+                {
+                    return std::dynamic_pointer_cast<const T>(std::enable_shared_from_this<ExecuteBase>::shared_from_this());
+                }
             };
 
-            virtual std::unique_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI&) const =0;
+            virtual std::shared_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI&) const =0;
 
         public:
             template <typename T> using Init=SteamBot::Startup::Init<CommandBase, T>;
