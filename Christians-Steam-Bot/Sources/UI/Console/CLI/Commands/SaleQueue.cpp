@@ -25,6 +25,17 @@
 
 /************************************************************************/
 
+void SteamBot::UI::CLI::performSaleQueue()
+{
+    SteamBot::UI::OutputText() << "ClI: requested sale queue clearing";
+    if (!SteamBot::SaleQueue::clear())
+    {
+        SteamBot::UI::OutputText() << "Sale queue: error";
+    }
+}
+
+/************************************************************************/
+
 namespace
 {
     class SaleQueueCommand : public SteamBot::UI::CommandBase
@@ -61,11 +72,7 @@ namespace
                 if (auto client=clientInfo->getClient())
                 {
                     bool success=SteamBot::Modules::Executor::executeWithFiber(client, [](SteamBot::Client& client) {
-                        SteamBot::UI::OutputText() << "ClI: requested sale queue clearing";
-                        if (!SteamBot::SaleQueue::clear())
-                        {
-                            SteamBot::UI::OutputText() << "Sale queue: error";
-                        }
+                        SteamBot::UI::CLI::performSaleQueue();
                     });
                     if (success)
                     {

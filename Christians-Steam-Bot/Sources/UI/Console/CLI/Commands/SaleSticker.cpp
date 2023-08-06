@@ -25,6 +25,15 @@
 
 /************************************************************************/
 
+void SteamBot::UI::CLI::performSaleSticker()
+{
+    SteamBot::UI::OutputText() << "ClI: requested sale sticker";
+    auto json=SteamBot::SaleSticker::claim().toJson();
+    SteamBot::UI::OutputText() << "Sale sticker: " << json;
+}
+
+/************************************************************************/
+
 namespace
 {
     class SaleStickerCommand : public SteamBot::UI::CommandBase
@@ -61,9 +70,7 @@ namespace
                 if (auto client=clientInfo->getClient())
                 {
                     bool success=SteamBot::Modules::Executor::executeWithFiber(client, [](SteamBot::Client& client) {
-                        SteamBot::UI::OutputText() << "ClI: requested sale sticker";
-                        auto json=SteamBot::SaleSticker::claim().toJson();
-                        SteamBot::UI::OutputText() << "Sale sticker: " << json;
+                        SteamBot::UI::CLI::performSaleSticker();
                     });
                     if (success)
                     {

@@ -70,6 +70,10 @@ namespace SteamBot
 
         public:
             void run();
+
+        public:
+            static void performSaleQueue();
+            static void performSaleSticker();
         };
     }
 }
