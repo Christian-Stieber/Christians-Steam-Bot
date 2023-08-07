@@ -18,7 +18,7 @@
  */
 
 #include "UI/CLI.hpp"
-#include "../Helpers.hpp"
+#include "UI/Command.hpp"
 
 #include "Modules/TradeOffers.hpp"
 #include "Modules/Executor.hpp"
@@ -29,21 +29,45 @@
 
 namespace
 {
-    class ListTradeOffersCommand : public CLI::CLICommandBase
+    class ListTradeOffersCommand : public SteamBot::UI::CommandBase
     {
     public:
-        ListTradeOffersCommand(CLI& cli_)
-            : CLICommandBase(cli_, "list-tradeoffers", "", "show incoming trade offers", true)
+        virtual bool global() const
         {
+            return false;
         }
 
-        virtual ~ListTradeOffersCommand() =default;
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("list-tradeoffers");
+            return string;
+        }
+
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("list incoming and outgoing tradeoffers");
+            return string;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>&) override;
+        class Execute : public ExecuteBase
+        {
+        public:
+            using ExecuteBase::ExecuteBase;
+
+            virtual ~Execute() =default;
+
+        public:
+            virtual void execute(SteamBot::ClientInfo*) const;
+        };
+
+        virtual std::shared_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_shared<Execute>(cli);
+        }
     };
 
-    ListTradeOffersCommand::InitClass<ListTradeOffersCommand> init;
+    ListTradeOffersCommand::Init<ListTradeOffersCommand> init;
 }
 
 /************************************************************************/
@@ -112,45 +136,31 @@ static void printOffers(const SteamBot::TradeOffers::TradeOffers& offers)
 
 /************************************************************************/
 
-bool ListTradeOffersCommand::execute(SteamBot::ClientInfo* clientInfo, std::vector<std::string>& words)
+void ListTradeOffersCommand::Execute::execute(SteamBot::ClientInfo* clientInfo) const
 {
-    if (words.size()==1)
+    if (auto client=clientInfo->getClient())
     {
-        if (auto client=clientInfo->getClient())
-        {
-            bool success=SteamBot::Modules::Executor::executeWithFiber(client, [](SteamBot::Client& client) {
-                if (auto offers=SteamBot::TradeOffers::getIncoming())
-                {
-                    printOffers(*offers);
-                }
-                else
-                {
-                    SteamBot::UI::OutputText() << "no incoming trade offers";
-                }
-                if (auto offers=SteamBot::TradeOffers::getOutgoing())
-                {
-                    printOffers(*offers);
-                }
-                else
-                {
-                    SteamBot::UI::OutputText() << "no outgoing trade offers";
-                }
-            });
-            if (success)
+        bool success=SteamBot::Modules::Executor::executeWithFiber(client, [](SteamBot::Client& client) {
+            if (auto offers=SteamBot::TradeOffers::getIncoming())
             {
-                std::cout << "requested trade offers for account " << client->getClientInfo().accountName << std::endl;
+                printOffers(*offers);
             }
+            else
+            {
+                SteamBot::UI::OutputText() << "no incoming trade offers";
+            }
+            if (auto offers=SteamBot::TradeOffers::getOutgoing())
+            {
+                printOffers(*offers);
+            }
+            else
+            {
+                SteamBot::UI::OutputText() << "no outgoing trade offers";
+            }
+        });
+        if (success)
+        {
+            std::cout << "requested trade offers for account " << client->getClientInfo().accountName << std::endl;
         }
-        return true;
     }
-    else
-    {
-        return false;
-    }
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useListTradeOffersCommand()
-{
 }
