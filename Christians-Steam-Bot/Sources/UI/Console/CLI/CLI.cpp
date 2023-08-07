@@ -83,6 +83,7 @@ bool SteamBot::UI::CommandBase::parse(const std::vector<std::string>& args, boos
                 parser.positional(*positional);
             }
             boost::program_options::store(parser.run(), variables);
+            boost::program_options::notify(variables);
         }
         return true;
     }

@@ -22,6 +22,7 @@
 /************************************************************************/
 
 #include "Startup.hpp"
+#include "Client/Client.hpp"
 
 #include <string_view>
 #include <memory>
@@ -144,6 +145,29 @@ namespace SteamBot
     {
         // https://stackoverflow.com/questions/3203452/how-to-read-entire-stream-into-a-stdstring
         value=std::regex(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>(), std::regex_constants::icase);
+        return stream;
+    }
+}
+
+/************************************************************************/
+
+namespace SteamBot
+{
+    class OptionBotName
+    {
+    public:
+        SteamBot::ClientInfo* clientInfo=nullptr;
+    };
+
+    inline std::istream& operator>>(std::istream& stream, OptionBotName& value)
+    {
+        std::string string{std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>()};
+        value.clientInfo=SteamBot::ClientInfo::find(string);
+        if (value.clientInfo==nullptr)
+        {
+            std::cout << "unknown account \"" << string << "\"" << std::endl;
+            throw false;
+        }
         return stream;
     }
 }
