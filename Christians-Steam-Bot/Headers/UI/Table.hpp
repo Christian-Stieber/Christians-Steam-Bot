@@ -33,10 +33,9 @@ namespace SteamBot
         public:
             class LineBase;
 
-        private:
-            const size_t columnCount;
-            std::vector<size_t> widths{columnCount, 0};
-            std::vector<std::string> fields;
+        protected:
+            std::vector<size_t> widths;
+            std::vector<std::vector<std::string>> fields;
 
         private:
             size_t outputLine=(size_t)(-1);
@@ -50,6 +49,10 @@ namespace SteamBot
             void add(LineBase&);
 
         protected:
+            // return the content at line/column
+            const std::string& getField(size_t, size_t) const;
+
+        protected:
             // checks whether any column starting at the indicated one has content
             bool hasContent(size_t) const;
 
@@ -58,6 +61,10 @@ namespace SteamBot
 
             // returns spaces to fill the column
             std::string_view getFiller(size_t) const;
+
+        protected:
+            // sort on column, case-insensitive
+            void sort(size_t);
 
         public:
             bool startLine();
@@ -80,12 +87,7 @@ protected:
     std::ostringstream& operator[](size_t);
 
 public:
-    // Doing it like this makes the columns empty, which will cause problems
-    // if we try to use this Line again.
-    decltype(columns) getColumns()
-    {
-        return std::move(columns);
-    }
+    std::vector<std::string> getColumns();
 };
 
 /************************************************************************/
@@ -149,6 +151,12 @@ namespace SteamBot
             std::string_view getFiller(T column) const
             {
                 return TableBase::getFiller(static_cast<std::underlying_type_t<T>>(column));
+            }
+
+        public:
+            void sort(T column)
+            {
+                TableBase::sort(static_cast<std::underlying_type_t<T>>(column));
             }
         };
     }

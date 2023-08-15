@@ -19,7 +19,10 @@
 
 #include "UI/Table.hpp"
 
+#include "Helpers/StringCompare.hpp"
+
 #include <cassert>
+#include <algorithm>
 
 /************************************************************************/
 
@@ -34,8 +37,8 @@ TableBase::LineBase::LineBase(size_t columnCount)
 
 /************************************************************************/
 
-TableBase::TableBase(size_t columns)
-    : columnCount(columns)
+TableBase::TableBase(size_t columnCount)
+    : widths(columnCount, 0)
 {
 }
 
@@ -54,23 +57,32 @@ std::ostringstream& TableBase::LineBase::operator[](size_t column)
 
 /************************************************************************/
 
+std::vector<std::string> TableBase::LineBase::getColumns()
+{
+    std::vector<std::string> result;
+    result.reserve(columns.size());
+    for (auto& column : columns)
+    {
+        result.emplace_back(std::move(column.str()));
+    }
+    return result;
+}
+
+/************************************************************************/
+
 void TableBase::add(TableBase::LineBase& line)
 {
-    auto columns=line.getColumns();
-    assert(columns.size()==columnCount);
+    fields.emplace_back(line.getColumns());
 
-    for (size_t i=0; i<columnCount; i++)
+    auto& columns=fields.back();
+    assert(columns.size()==widths.size());
+
+    for (size_t i=0; i<columns.size(); i++)
     {
-        std::string string=std::move(columns[i].str());
-        // ToDo: maybe add UTF-8 support
-        if (widths[i]<string.size())
-        {
-            widths[i]=string.size();
-        }
-        fields.emplace_back(std::move(string));
+        // ToDo: support UTF-8
+        const auto length=columns[i].size();
+        if (widths[i]<length) widths[i]=length;
     }
-
-    assert(fields.size()%columnCount==0);
 }
 
 /************************************************************************/
@@ -78,16 +90,25 @@ void TableBase::add(TableBase::LineBase& line)
 bool TableBase::startLine()
 {
     outputLine++;
-    return (outputLine+1)*columnCount<=fields.size();
+    return outputLine<fields.size();
+}
+
+/************************************************************************/
+
+const std::string& TableBase::getField(size_t line, size_t column) const
+{
+    assert(line<fields.size() && column<widths.size());
+    return fields[line][column];
 }
 
 /************************************************************************/
 
 bool TableBase::hasContent(size_t column) const
 {
-    for (size_t i=column; i<columnCount; i++)
+    const auto& line=fields[outputLine];
+    for (; column<widths.size(); column++)
     {
-        if (!fields[outputLine*columnCount+i].empty())
+        if (!line[column].empty())
         {
             return true;
         }
@@ -99,21 +120,31 @@ bool TableBase::hasContent(size_t column) const
 
 const std::string& TableBase::getContent(size_t column) const
 {
-    assert(column<columnCount);
-    return fields[outputLine*columnCount+column];
+    assert(column<widths.size());
+    return fields[outputLine][column];
 }
 
 /************************************************************************/
 
 std::string_view TableBase::getFiller(size_t column) const
 {
-    assert(column<columnCount);
+    assert(column<widths.size());
 
-    const size_t width=widths[column]-fields[outputLine*columnCount+column].size();
+    const size_t width=widths[column]-fields[outputLine][column].size();
     assert((ssize_t)width>=0);
     if (width>filler.size())
     {
         filler.resize(width, ' ');
     }
     return std::string_view(filler.data(), width);
+}
+
+/************************************************************************/
+
+void TableBase::sort(size_t column)
+{
+    assert(column<widths.size());
+    std::sort(fields.begin(), fields.end(), [column](const std::vector<std::string>& left, const std::vector<std::string>& right) {
+        return SteamBot::caseInsensitiveStringCompare_less(left[column], right[column]);
+    });
 }
