@@ -132,6 +132,7 @@ void StatusCommand::Execute::execute(SteamBot::ClientInfo*) const
         table.add(line);
     }
 
+    table.sort(Columns::Account);
     while (table.startLine())
     {
         std::cout << table.getContent(Columns::Account);
