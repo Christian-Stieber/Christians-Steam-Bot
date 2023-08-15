@@ -19,6 +19,7 @@
 
 #include "UI/CLI.hpp"
 #include "UI/Command.hpp"
+#include "UI/Table.hpp"
 
 #include "Client/Client.hpp"
 #include "Modules/Executor.hpp"
@@ -75,13 +76,18 @@ namespace
 
 void StatusCommand::Execute::execute(SteamBot::ClientInfo*) const
 {
+    enum class Columns { Account, Status, Max };
+    SteamBot::UI::Table<Columns> table;
+
     for (auto clientInfo: SteamBot::ClientInfo::getClients())
     {
-        std::ostringstream output;
-        output << "   " << clientInfo->accountName;
+        decltype(table)::Line line;
+        line[Columns::Account] << clientInfo->accountName;
+
+        auto& status=line[Columns::Status];
         if (auto client=clientInfo->getClient())
         {
-            SteamBot::Modules::Executor::execute(std::move(client), [&output](SteamBot::Client& client) mutable {
+            SteamBot::Modules::Executor::execute(std::move(client), [&status](SteamBot::Client& client) mutable {
                 typedef SteamBot::Modules::Login::Whiteboard::LoginStatus LoginStatus;
                 typedef SteamBot::Modules::PlayGames::Whiteboard::PlayingGames PlayingGames;
                 typedef SteamBot::Modules::OwnedGames::Whiteboard::OwnedGames OwnedGames;
@@ -91,7 +97,7 @@ void StatusCommand::Execute::execute(SteamBot::ClientInfo*) const
                     break;
 
                 case LoginStatus::LoggingIn:
-                    output << "; logging in";
+                    status << "logging in";
                     break;
 
                 case LoginStatus::LoggedIn:
@@ -100,15 +106,15 @@ void StatusCommand::Execute::execute(SteamBot::ClientInfo*) const
                         assert(!playing->empty());
 
                         auto ownedGames=client.whiteboard.has<OwnedGames::Ptr>();
-                        const char* separator="; playing ";
+                        const char* separator="playing ";
                         for (SteamBot::AppID appId : *playing)
                         {
-                            output << separator << static_cast<std::underlying_type_t<decltype(appId)>>(appId);
+                            status << separator << static_cast<std::underlying_type_t<decltype(appId)>>(appId);
                             if (ownedGames)
                             {
                                 if (auto info=(*ownedGames)->getInfo(appId))
                                 {
-                                    output << " (" << info->name << ")";
+                                    status << " (" << info->name << ")";
                                 }
                             }
                             separator=", ";
@@ -116,12 +122,24 @@ void StatusCommand::Execute::execute(SteamBot::ClientInfo*) const
                     }
                     else
                     {
-                        output << "; logged in";
+                        status << "logged in";
                     }
                     break;
                 }
             });
         }
-        std::cout << output.view() << std::endl;
+
+        table.add(line);
     }
+
+    while (table.startLine())
+    {
+        std::cout << table.getContent(Columns::Account);
+        if (table.hasContent(Columns::Status))
+        {
+            std::cout << table.getFiller(Columns::Account) << " -> " << table.getContent(Columns::Status);
+        }
+        std::cout << '\n';
+    }
+    std::cout << std::flush;
 }
