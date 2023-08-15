@@ -143,8 +143,19 @@ namespace SteamBot
 
     inline std::istream& operator>>(std::istream& stream, OptionRegex& value)
     {
-        // https://stackoverflow.com/questions/3203452/how-to-read-entire-stream-into-a-stdstring
-        value=std::regex(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>(), std::regex_constants::icase);
+        try
+        {
+            // https://stackoverflow.com/questions/3203452/how-to-read-entire-stream-into-a-stdstring
+            value=std::regex(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>(), std::regex_constants::icase);
+        }
+        catch(const std::regex_error& exception)
+        {
+            // Note: on g++, the .what() is quite rubbish and much more confusing compared to having no detail information
+            // Like "*" will tell you "Mismatched '(' and ')' in regular expression" despite not having any () anywhere
+            //      "[" will tell you "Unexpected character within '[...]' in regular expression", which is still more wrong than right
+            std::cout << "invalid regular expression" << std::endl;
+            throw;
+        }
         return stream;
     }
 }
