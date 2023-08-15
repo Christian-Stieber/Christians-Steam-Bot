@@ -18,8 +18,7 @@
  */
 
 #include "UI/CLI.hpp"
-
-#include "../Helpers.hpp"
+#include "UI/Command.hpp"
 
 #include "Client/Client.hpp"
 #include "Modules/Executor.hpp"
@@ -31,29 +30,51 @@
 
 namespace
 {
-    class StatusCommand : public CLI::CLICommandBase
+    class StatusCommand : public SteamBot::UI::CommandBase
     {
     public:
-        StatusCommand(CLI& cli_)
-            : CLICommandBase(cli_, "status", "", "Show list of known accounts", false)
+        virtual bool global() const
         {
+            return true;
         }
 
-        virtual ~StatusCommand() =default;
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("status");
+            return string;
+        }
+
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("show status of bot accounts");
+            return string;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>&) override;
+        class Execute : public ExecuteBase
+        {
+        public:
+            using ExecuteBase::ExecuteBase;
+
+            virtual ~Execute() =default;
+
+        public:
+            virtual void execute(SteamBot::ClientInfo*) const;
+        };
+
+        virtual std::shared_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_shared<Execute>(cli);
+        }
     };
 
-    StatusCommand::InitClass<StatusCommand> init;
+    StatusCommand::Init<StatusCommand> init;
 }
 
 /************************************************************************/
 
-bool StatusCommand::execute(SteamBot::ClientInfo*, std::vector<std::string>& words)
+void StatusCommand::Execute::execute(SteamBot::ClientInfo*) const
 {
-    if (words.size()>1) return false;
-
     for (auto clientInfo: SteamBot::ClientInfo::getClients())
     {
         std::ostringstream output;
@@ -103,12 +124,4 @@ bool StatusCommand::execute(SteamBot::ClientInfo*, std::vector<std::string>& wor
         }
         std::cout << output.view() << std::endl;
     }
-
-    return true;
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useStatusCommand()
-{
 }
