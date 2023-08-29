@@ -151,8 +151,7 @@ namespace SteamBot
         catch(const std::regex_error& exception)
         {
             // Note: on g++, the .what() is quite rubbish and much more confusing compared to having no detail information
-            // Like "*" will tell you "Mismatched '(' and ')' in regular expression" despite not having any () anywhere
-            //      "[" will tell you "Unexpected character within '[...]' in regular expression", which is still more wrong than right
+            // ToDo: Visual Studio, don't know yet. See if we want to add it there.
             std::cout << "invalid regular expression" << std::endl;
             throw;
         }

@@ -15,7 +15,7 @@ list(APPEND SRCS Main)
 
 list(APPEND SRCS UI/Console/Console UI/Console/Table UI/Console/Manager_Linux)
 list(APPEND SRCS UI/Console/CLI/CLI UI/Console/CLI/Helpers)
-list(APPEND SRCS UI/Console/CLI/Commands/Launch UI/Console/CLI/Commands/Quit UI/Console/CLI/Commands/Status)
+list(APPEND SRCS UI/Console/CLI/Commands/Launch UI/Console/CLI/Commands/Quit UI/Console/CLI/Commands/Status UI/Console/CLI/Commands/Select)
 list(APPEND SRCS UI/Console/CLI/Commands/Exit UI/Console/CLI/Commands/Help)
 list(APPEND SRCS UI/Console/CLI/Commands/HandleTrade UI/Console/CLI/Commands/ListTradeOffers)
 list(APPEND SRCS UI/Console/CLI/Commands/ListGames)
@@ -24,7 +24,6 @@ list(APPEND SRCS UI/Console/CLI/Commands/DiscoveryQueue UI/Console/CLI/Commands/
 list(APPEND SRCS UI/Console/CLI/Commands/ListInventory UI/Console/CLI/Commands/SendInventory)
 list(APPEND SRCS UI/Console/CLI/Commands/PlayStopGame)
 
-#list(APPEND SRCS UI/Console/CLI/Commands/Select)
 #list(APPEND SRCS UI/Console/CLI/Commands/Create)
 #list(APPEND SRCS UI/Console/CLI/Commands/CreateAddRemoveGroup UI/Console/CLI/Commands/ListGroups)
 
