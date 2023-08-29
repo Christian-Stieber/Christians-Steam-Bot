@@ -85,6 +85,13 @@ bool SteamBot::UI::CommandBase::parse(const std::vector<std::string>& args, boos
             boost::program_options::store(parser.run(), variables);
             boost::program_options::notify(variables);
         }
+        else
+        {
+            if (args.size()>0)
+            {
+                throw false;
+            }
+        }
         return true;
     }
     catch(...)
