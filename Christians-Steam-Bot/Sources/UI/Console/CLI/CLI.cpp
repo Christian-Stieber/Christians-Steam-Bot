@@ -22,6 +22,9 @@
 #include "Vector.hpp"
 
 #include <map>
+#include <limits>
+
+#undef max
 
 /************************************************************************/
 

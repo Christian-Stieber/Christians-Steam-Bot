@@ -148,7 +148,7 @@ namespace SteamBot
             // https://stackoverflow.com/questions/3203452/how-to-read-entire-stream-into-a-stdstring
             value=std::regex(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>(), std::regex_constants::icase);
         }
-        catch(const std::regex_error& exception)
+        catch(const std::regex_error&)
         {
             // Note: on g++, the .what() is quite rubbish and much more confusing compared to having no detail information
             // ToDo: Visual Studio, don't know yet. See if we want to add it there.
