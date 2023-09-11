@@ -24,6 +24,10 @@
 #include <cassert>
 #include <algorithm>
 
+#ifdef _WIN32
+typedef std::make_signed_t<size_t> ssize_t;
+#endif
+
 /************************************************************************/
 
 typedef SteamBot::UI::TableBase TableBase;
