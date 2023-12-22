@@ -27,6 +27,7 @@
     <ClCompile Include="Sources\Main.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\CLI.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\AddLicense.cpp" />
+    <ClCompile Include="Sources\UI\Console\CLI\Commands\Create.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\DiscoveryQueue.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\Exit.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\HandleTrade.cpp" />
