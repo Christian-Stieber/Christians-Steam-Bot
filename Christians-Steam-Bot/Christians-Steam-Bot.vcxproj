@@ -28,12 +28,14 @@
     <ClCompile Include="Sources\UI\Console\CLI\CLI.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\AddLicense.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\Create.cpp" />
+    <ClCompile Include="Sources\UI\Console\CLI\Commands\CreateAddRemoveGroup.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\DiscoveryQueue.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\Exit.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\HandleTrade.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\Help.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\Launch.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\ListGames.cpp" />
+    <ClCompile Include="Sources\UI\Console\CLI\Commands\ListGroups.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\ListInventory.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\ListTradeOffers.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\PlayStopGame.cpp" />
