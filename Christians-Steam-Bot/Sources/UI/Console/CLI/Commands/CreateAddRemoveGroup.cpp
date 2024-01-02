@@ -18,7 +18,7 @@
  */
 
 #include "UI/CLI.hpp"
-#include "../Helpers.hpp"
+#include "UI/Command.hpp"
 
 #include "Helpers/JSON.hpp"
 
@@ -27,91 +27,115 @@
 namespace
 {
     enum ChangeMode { Create, Add, Remove };
+}
 
-    static bool checkGroup(const std::vector<SteamBot::ClientInfo*>& clients, ChangeMode mode)
+/************************************************************************/
+
+namespace
+{
+    class Execute : public SteamBot::UI::CommandBase::ExecuteBase
     {
-        switch(mode)
-        {
-        case ChangeMode::Create:
-            return clients.empty();
+    private:
+        ChangeMode changeMode;
+        std::string group;
+        std::vector<SteamBot::OptionBotName> accounts;
 
-        case ChangeMode::Add:
-        case ChangeMode::Remove:
-            return !clients.empty();
+    public:
+        Execute(SteamBot::UI::CLI& cli_, ChangeMode changeMode_)
+            : ExecuteBase(cli_), changeMode(changeMode_)
+        {
         }
 
-        assert(false);
-        return false;
-    }
+        virtual ~Execute() =default;
 
-    static bool changeGroup(std::vector<std::string>& words, ChangeMode mode)
-    {
-        if (words.size()>=3)
+    public:
+        virtual bool init(const boost::program_options::variables_map& options) override
         {
-            std::string_view groupName=words[1];
+            assert(options.count("group"));
+            assert(options.count("account"));
+            group=options["group"].as<std::string>();
+            accounts=options["account"].as<decltype(accounts)>();
+            return true;
+        }
+
+    private:
+        bool checkGroup(const std::vector<SteamBot::ClientInfo*>& clients) const
+        {
+            switch(changeMode)
+            {
+            case ChangeMode::Create:
+                return clients.empty();
+
+            case ChangeMode::Add:
+            case ChangeMode::Remove:
+                return !clients.empty();
+            }
+
+            assert(false);
+            return false;
+        }
+
+        virtual void execute(SteamBot::ClientInfo*) const override
+        {
+            std::string_view groupName=group;
             if (groupName.starts_with('@'))
             {
                 groupName.remove_prefix(1);
             }
             auto clients=SteamBot::ClientInfo::getGroup(groupName);
-            if (checkGroup(clients, mode))
+            if (checkGroup(clients))
             {
-                for (size_t i=2; i<words.size(); i++)
+                for (const auto& account : accounts)
                 {
-                    auto info=SteamBot::ClientInfo::find(words[i]);
-                    if (info!=nullptr)
-                    {
-                        auto& dataFile=SteamBot::DataFile::get(info->accountName, SteamBot::DataFile::FileType::Account);
-                        dataFile.update([mode, groupName](boost::json::value& json) {
-                            auto& array=SteamBot::JSON::createItem(json, "Groups");
-                            if (array.is_null())
-                            {
-                                array.emplace_array();
-                            }
-                            for (auto iterator=array.as_array().begin(); iterator!=array.as_array().end(); ++iterator)
-                            {
-                                if (iterator->as_string()==groupName)
-                                {
-                                    switch(mode)
-                                    {
-                                    case ChangeMode::Create:
-                                    case ChangeMode::Add:
-                                        return false;
+                    auto info=account.clientInfo;
+                    assert(info!=nullptr);
 
-                                    case ChangeMode::Remove:
-                                        array.as_array().erase(iterator);
-                                        if (array.as_array().empty())
-                                        {
-                                            SteamBot::JSON::eraseItem(json, "Groups");
-                                        }
-                                        return true;
+                    auto& dataFile=SteamBot::DataFile::get(info->accountName, SteamBot::DataFile::FileType::Account);
+                    dataFile.update([changeMode=this->changeMode, groupName](boost::json::value& json) {
+                        auto& array=SteamBot::JSON::createItem(json, "Groups");
+                        if (array.is_null())
+                        {
+                            array.emplace_array();
+                        }
+                        for (auto iterator=array.as_array().begin(); iterator!=array.as_array().end(); ++iterator)
+                        {
+                            if (iterator->as_string()==groupName)
+                            {
+                                switch(changeMode)
+                                {
+                                case ChangeMode::Create:
+                                case ChangeMode::Add:
+                                    return false;
+
+                                case ChangeMode::Remove:
+                                    array.as_array().erase(iterator);
+                                    if (array.as_array().empty())
+                                    {
+                                        SteamBot::JSON::eraseItem(json, "Groups");
                                     }
+                                    return true;
                                 }
                             }
-                            switch(mode)
-                            {
-                            case ChangeMode::Create:
-                            case ChangeMode::Add:
-                                array.as_array().emplace_back(groupName);
-                                return true;
+                        }
+                        switch(changeMode)
+                        {
+                        case ChangeMode::Create:
+                        case ChangeMode::Add:
+                            array.as_array().emplace_back(groupName);
+                            return true;
 
-                            case ChangeMode::Remove:
-                                return false;
-                            }
-
-                            assert(false);
+                        case ChangeMode::Remove:
                             return false;
-                        });
-                    }
-                    else
-                    {
-                        std::cout << "unknown account \"" << words[i] << "\"" << std::endl;
-                    }
+                        }
+
+                        assert(false);
+                        return false;
+                    });
                 }
             }
             else
             {
-                switch(mode)
+                switch(changeMode)
                 {
                 case ChangeMode::Create:
                     std::cout << "cannot create group \"" << groupName << "\": group already exists" << std::endl;
@@ -126,89 +150,169 @@ namespace
                     break;
                 }
             }
+        }
+    };
+}
+
+/************************************************************************/
+
+namespace
+{
+    class CommandBase : public SteamBot::UI::CommandBase
+    {
+    public:
+        virtual bool global() const
+        {
             return true;
         }
-        else
+
+        virtual const boost::program_options::positional_options_description* positionals() const override
         {
-            return false;
+            static auto const positional=[](){
+                auto positional=new boost::program_options::positional_options_description();
+                positional->add("group", 1);
+                positional->add("account", -1);
+                return positional;
+            }();
+            return positional;
         }
-    }
+    };
 }
 
 /************************************************************************/
 
 namespace
 {
-    class CreateGroupCommand : public CLI::CLICommandBase
+    class CreateGroupCommand : public CommandBase
     {
     public:
-        CreateGroupCommand(CLI& cli_)
-            : CLICommandBase(cli_, "create-group", "[@]<group> <account>...", "create a new group", false)
+        virtual const std::string_view& command() const override
         {
+            static const std::string_view string("create-group");
+            return string;
         }
 
-        virtual ~CreateGroupCommand() =default;
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("create a new group");
+            return string;
+        }
+
+        virtual const boost::program_options::options_description* options() const override
+        {
+            static auto const options=[](){
+                auto options=new boost::program_options::options_description();
+                options->add_options()
+                    ("group",
+                     boost::program_options::value<std::string>()->value_name("name")->required(),
+                     "group id to create")
+                    ("account",
+                     boost::program_options::value<std::vector<SteamBot::OptionBotName>>()->value_name("bot-name")->multitoken()->required(),
+                     "accounts to add")
+                    ;
+                return options;
+            }();
+            return options;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>& words) override
+        virtual std::shared_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
         {
-            return changeGroup(words, ChangeMode::Create);
+            return std::make_shared<Execute>(cli, ChangeMode::Create);
         }
     };
 
-    CreateGroupCommand::InitClass<CreateGroupCommand> init1;
+    CreateGroupCommand::Init<CreateGroupCommand> createInit;
 }
 
 /************************************************************************/
 
 namespace
 {
-    class AddGroupCommand : public CLI::CLICommandBase
+    class AddGroupCommand : public CommandBase
     {
     public:
-        AddGroupCommand(CLI& cli_)
-            : CLICommandBase(cli_, "add-group", "[@]<group> <account>...", "add to a group", false)
+        virtual const std::string_view& command() const override
         {
+            static const std::string_view string("add-group");
+            return string;
         }
 
-        virtual ~AddGroupCommand() =default;
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("add to a group");
+            return string;
+        }
+
+        virtual const boost::program_options::options_description* options() const override
+        {
+            static auto const options=[](){
+                auto options=new boost::program_options::options_description();
+                options->add_options()
+                    ("group",
+                     boost::program_options::value<std::string>()->value_name("name")->required(),
+                     "group id to add to")
+                    ("account",
+                     boost::program_options::value<std::vector<SteamBot::OptionBotName>>()->value_name("bot-name")->multitoken()->required(),
+                     "accounts to add")
+                    ;
+                return options;
+            }();
+            return options;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>& words) override
+        virtual std::shared_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
         {
-            return changeGroup(words, ChangeMode::Add);
+            return std::make_shared<Execute>(cli, ChangeMode::Add);
         }
     };
 
-    AddGroupCommand::InitClass<AddGroupCommand> init2;
+    AddGroupCommand::Init<AddGroupCommand> addInit;
 }
 
 /************************************************************************/
 
 namespace
 {
-    class RemoveGroupCommand : public CLI::CLICommandBase
+    class RemoveGroupCommand : public CommandBase
     {
     public:
-        RemoveGroupCommand(CLI& cli_)
-            : CLICommandBase(cli_, "remove-group", "[@]<group> <account>...", "remove from a group", false)
+        virtual const std::string_view& command() const override
         {
+            static const std::string_view string("remove-group");
+            return string;
         }
 
-        virtual ~RemoveGroupCommand() =default;
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("remove to a group");
+            return string;
+        }
+
+        virtual const boost::program_options::options_description* options() const override
+        {
+            static auto const options=[](){
+                auto options=new boost::program_options::options_description();
+                options->add_options()
+                    ("group",
+                     boost::program_options::value<std::string>()->value_name("name")->required(),
+                     "group id to remove to")
+                    ("account",
+                     boost::program_options::value<std::vector<SteamBot::OptionBotName>>()->value_name("bot-name")->multitoken()->required(),
+                     "accounts to remove")
+                    ;
+                return options;
+            }();
+            return options;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>& words) override
+        virtual std::shared_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
         {
-            return changeGroup(words, ChangeMode::Remove);
+            return std::make_shared<Execute>(cli, ChangeMode::Remove);
         }
     };
 
-    RemoveGroupCommand::InitClass<RemoveGroupCommand> init3;
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useCreateAddRemoveGroupCommands()
-{
+    RemoveGroupCommand::Init<RemoveGroupCommand> removeInit;
 }
