@@ -28,10 +28,7 @@
 void SteamBot::UI::CLI::performSaleQueue()
 {
     SteamBot::UI::OutputText() << "ClI: requested sale queue clearing";
-    if (!SteamBot::SaleQueue::clear())
-    {
-        SteamBot::UI::OutputText() << "Sale queue: error";
-    }
+    SteamBot::SaleQueue::clear();
 }
 
 /************************************************************************/
