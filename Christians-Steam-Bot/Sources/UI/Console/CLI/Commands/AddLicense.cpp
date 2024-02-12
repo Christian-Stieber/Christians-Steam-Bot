@@ -39,7 +39,7 @@ namespace
         {
             static auto const positional=[](){
                 auto positional=new boost::program_options::positional_options_description();
-                positional->add("appid", -1);
+                positional->add("packageid", -1);
                 return positional;
             }();
             return positional;
@@ -62,9 +62,9 @@ namespace
             static auto const options=[this](){
                 auto options=new boost::program_options::options_description();
                 options->add_options()
-                    ("appid",
-                     boost::program_options::value<std::vector<SteamBot::AppID>>()->value_name("app-id")->multitoken()->required(),
-                     "(free) appids to add")
+                    ("packageid",
+                     boost::program_options::value<std::vector<SteamBot::PackageID>>()->value_name("package-id")->multitoken()->required(),
+                     "(free) package-ids to add")
                     ;
                 return options;
             }();
@@ -75,7 +75,7 @@ namespace
         class Execute : public ExecuteBase
         {
         private:
-            std::vector<SteamBot::AppID> appIds;
+            std::vector<SteamBot::PackageID> packageIds;
 
         public:
             using ExecuteBase::ExecuteBase;
@@ -85,9 +85,9 @@ namespace
         public:
             virtual bool init(const boost::program_options::variables_map& options) override
             {
-                if (options.count("appid"))
+                if (options.count("packageid"))
                 {
-                    appIds=options["appid"].as<std::vector<SteamBot::AppID>>();
+                    packageIds=options["packageid"].as<std::vector<SteamBot::PackageID>>();
                     return true;
                 }
                 return false;
@@ -99,20 +99,20 @@ namespace
                 {
                     bool success=SteamBot::Modules::Executor::execute(std::move(client), [this](SteamBot::Client&) {
                         std::chrono::seconds delay(0);
-                        for (const auto appId : appIds)
+                        for (const auto packageId : packageIds)
                         {
                             boost::this_fiber::sleep_for(delay);
-                            SteamBot::UI::OutputText() << "ClI: adding license " << toInteger(appId);
-                            SteamBot::Modules::AddFreeLicense::add(appId);
+                            SteamBot::UI::OutputText() << "ClI: adding package " << toInteger(packageId);
+                            SteamBot::Modules::AddFreeLicense::add(packageId);
                             delay=std::chrono::seconds(1);
                         }
                     });
                     if (success)
                     {
-                        std::cout << "I've asked Steam to add ";
-                        for (const auto appId : appIds)
+                        std::cout << "I've asked Steam to add";
+                        for (const auto packageId : packageIds)
                         {
-                            std::cout << " " << toInteger(appId);
+                            std::cout << " " << toInteger(packageId);
                         }
                         std::cout << " to your account" << std::endl;
                     }
