@@ -25,10 +25,6 @@
 
 /************************************************************************/
 
-typedef SteamBot::Modules::AddFreeLicense::Messageboard::AddLicense AddLicense;
-
-/************************************************************************/
-
 namespace
 {
     class AddLicenseCommand : public SteamBot::UI::CommandBase
@@ -107,7 +103,7 @@ namespace
                         {
                             boost::this_fiber::sleep_for(delay);
                             SteamBot::UI::OutputText() << "ClI: adding license " << toInteger(appId);
-                            AddLicense::add(appId);
+                            SteamBot::Modules::AddFreeLicense::add(appId);
                             delay=std::chrono::seconds(1);
                         }
                     });
