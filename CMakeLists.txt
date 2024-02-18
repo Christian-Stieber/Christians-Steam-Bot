@@ -24,7 +24,7 @@ list(APPEND SRCS UI/Console/CLI/Commands/AddLicense)
 list(APPEND SRCS UI/Console/CLI/Commands/DiscoveryQueue UI/Console/CLI/Commands/SaleSticker UI/Console/CLI/Commands/SaleQueue UI/Console/CLI/Commands/SaleEvent)
 list(APPEND SRCS UI/Console/CLI/Commands/ListInventory UI/Console/CLI/Commands/SendInventory)
 list(APPEND SRCS UI/Console/CLI/Commands/PlayStopGame)
-list(APPEND SRCS UI/Console/CLI/Commands/ViewStream)
+list(APPEND SRCS UI/Console/CLI/Commands/ViewStream UI/Console/CLI/Commands/StopStream)
 list(APPEND SRCS UI/Console/CLI/Commands/CreateAddRemoveGroup UI/Console/CLI/Commands/ListGroups)
 
 ######################################################################

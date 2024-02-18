@@ -28,10 +28,10 @@
 
 namespace
 {
-    class ViewStreamCommand : public SteamBot::UI::CommandBase
+    class StopStreamCommand : public SteamBot::UI::CommandBase
     {
     public:
-        ViewStreamCommand() =default;
+        StopStreamCommand() =default;
 
     public:
         virtual bool global() const
@@ -41,13 +41,13 @@ namespace
 
         virtual const std::string_view& command() const override
         {
-            static const std::string_view string("view-stream");
+            static const std::string_view string("stop-stream");
             return string;
         }
 
         virtual const std::string_view& description() const override
         {
-            static const std::string_view string("pretend to view a stream on a page");
+            static const std::string_view string("stop viewing the stream on a page");
             return string;
         }
 
@@ -79,7 +79,7 @@ namespace
         class Execute : public ExecuteBase
         {
         private:
-            SteamBot::OptionURL url;
+            std::optional<SteamBot::OptionURL> url;
 
         public:
             using ExecuteBase::ExecuteBase;
@@ -92,9 +92,8 @@ namespace
                 if (options.count("url"))
                 {
                     url=options["url"].as<SteamBot::OptionURL>();
-                    return true;
                 }
-                return false;
+                return true;
             }
 
             virtual void execute(SteamBot::ClientInfo* clientInfo) const override
@@ -103,7 +102,14 @@ namespace
                 {
                     bool success=false;
                     SteamBot::Modules::Executor::execute(client, [this, &success](SteamBot::Client&) mutable {
-                        success=SteamBot::Modules::ViewStream::start(url);
+                        if (url)
+                        {
+                            success=SteamBot::Modules::ViewStream::stop(*url);
+                        }
+                        else
+                        {
+                            success=SteamBot::Modules::ViewStream::stop();
+                        }
                     });
                 }
             }
@@ -115,5 +121,5 @@ namespace
         }
     };
 
-    ViewStreamCommand::Init<ViewStreamCommand> init;
+    StopStreamCommand::Init<StopStreamCommand> init;
 }
