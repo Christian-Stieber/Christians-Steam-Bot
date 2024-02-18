@@ -33,6 +33,8 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 
+#include <boost/url/url.hpp>
+
 /************************************************************************/
 
 namespace SteamBot
@@ -177,6 +179,42 @@ namespace SteamBot
         {
             std::cout << "unknown account \"" << string << "\"" << std::endl;
             throw false;
+        }
+        return stream;
+    }
+}
+
+/************************************************************************/
+
+namespace SteamBot
+{
+    class OptionURL : public boost::urls::url
+    {
+    public:
+        using boost::urls::url::url;
+
+    public:
+        OptionURL& operator=(boost::urls::url&& other)
+        {
+            boost::urls::url::operator=(std::move(other));
+            return *this;
+        }
+    };
+
+    inline std::istream& operator>>(std::istream& stream, OptionURL& value)
+    {
+        try
+        {
+            // https://stackoverflow.com/questions/3203452/how-to-read-entire-stream-into-a-stdstring
+            std::string string{std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>()};
+            value=boost::urls::url(string);
+        }
+        catch(const boost::system::system_error& error)
+        {
+            // Note: on g++, the .what() is quite rubbish and much more confusing compared to having no detail information
+            // ToDo: Visual Studio, don't know yet. See if we want to add it there.
+            std::cout << "invalid url: " << error.what() << std::endl;
+            throw;
         }
         return stream;
     }
