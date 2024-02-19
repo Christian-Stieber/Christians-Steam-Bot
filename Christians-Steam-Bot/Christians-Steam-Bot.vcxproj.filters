@@ -93,6 +93,12 @@
     <ClCompile Include="Sources\UI\Console\CLI\Commands\CreateAddRemoveGroup.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Sources\UI\Console\CLI\Commands\StopStream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Sources\UI\Console\CLI\Commands\ViewStream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Sources\UI\Console\Console.hpp">

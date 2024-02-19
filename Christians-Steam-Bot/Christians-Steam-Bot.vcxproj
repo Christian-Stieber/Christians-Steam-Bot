@@ -46,6 +46,8 @@
     <ClCompile Include="Sources\UI\Console\CLI\Commands\Select.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\SendInventory.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\Status.cpp" />
+    <ClCompile Include="Sources\UI\Console\CLI\Commands\StopStream.cpp" />
+    <ClCompile Include="Sources\UI\Console\CLI\Commands\ViewStream.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Helpers.cpp" />
     <ClCompile Include="Sources\UI\Console\Console.cpp" />
     <ClCompile Include="Sources\UI\Console\Manager_Windows.cpp" />
