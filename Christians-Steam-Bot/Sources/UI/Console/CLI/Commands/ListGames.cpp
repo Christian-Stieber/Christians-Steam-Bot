@@ -26,6 +26,7 @@
 #include "Helpers/StringCompare.hpp"
 #include "Helpers/Time.hpp"
 #include "Modules/PackageData.hpp"
+#include "EnumString.hpp"
 
 #include <iomanip>
 
@@ -130,6 +131,10 @@ static void print(const SteamBot::Modules::LicenseList::Whiteboard::Licenses::Li
     auto packageIdValue=static_cast<std::underlying_type_t<decltype(license.packageId)>>(license.packageId);
     std::cout << "pkg " << packageIdValue
               << " purchased " << SteamBot::Time::toString(license.timeCreated, false);
+    if (license.paymentMethod!=SteamBot::PaymentMethod::None)
+    {
+        std::cout << " (" << SteamBot::enumToStringAlways(license.paymentMethod) << ")";
+    }
 }
 
 /************************************************************************/
