@@ -19,52 +19,56 @@
 
 #include "UI/CLI.hpp"
 #include "UI/Command.hpp"
+#include "../Helpers.hpp"
 
 #include "Modules/Executor.hpp"
-#include "Modules/AddFreeLicense.hpp"
+#include "Modules/ViewStream.hpp"
 
 /************************************************************************/
 
 namespace
 {
-    class AddLicenseCommand : public SteamBot::UI::CommandBase
+    class ViewStreamCommand : public SteamBot::UI::CommandBase
     {
+    public:
+        ViewStreamCommand() =default;
+
     public:
         virtual bool global() const
         {
             return false;
         }
 
-        virtual const boost::program_options::positional_options_description* positionals() const override
-        {
-            static auto const positional=[](){
-                auto positional=new boost::program_options::positional_options_description();
-                positional->add("packageid", -1);
-                return positional;
-            }();
-            return positional;
-        }
-
         virtual const std::string_view& command() const override
         {
-            static const std::string_view string("add-license");
+            static const std::string_view string("view-stream");
             return string;
         }
 
         virtual const std::string_view& description() const override
         {
-            static const std::string_view string("add (free) games to account");
+            static const std::string_view string("pretend to view a stream on a page");
             return string;
+        }
+
+        virtual const boost::program_options::positional_options_description* positionals() const override
+        {
+            static auto const positional=[](){
+                auto positional=new boost::program_options::positional_options_description();
+                positional->add("url", -1);
+                return positional;
+            }();
+            return positional;
         }
 
         virtual const boost::program_options::options_description* options() const override
         {
-            static auto const options=[this](){
+            static auto const options=[](){
                 auto options=new boost::program_options::options_description();
                 options->add_options()
-                    ("packageid",
-                     boost::program_options::value<std::vector<SteamBot::PackageID>>()->value_name("package-id")->multitoken()->required(),
-                     "(free) package-ids to add")
+                    ("url",
+                     boost::program_options::value<SteamBot::OptionURL>()->value_name("url"),
+                     "page url")
                     ;
                 return options;
             }();
@@ -75,7 +79,7 @@ namespace
         class Execute : public ExecuteBase
         {
         private:
-            std::vector<SteamBot::PackageID> packageIds;
+            SteamBot::OptionURL url;
 
         public:
             using ExecuteBase::ExecuteBase;
@@ -85,9 +89,9 @@ namespace
         public:
             virtual bool init(const boost::program_options::variables_map& options) override
             {
-                if (options.count("packageid"))
+                if (options.count("url"))
                 {
-                    packageIds=options["packageid"].as<std::vector<SteamBot::PackageID>>();
+                    url=options["url"].as<SteamBot::OptionURL>();
                     return true;
                 }
                 return false;
@@ -97,25 +101,10 @@ namespace
             {
                 if (auto client=clientInfo->getClient())
                 {
-                    bool success=SteamBot::Modules::Executor::execute(std::move(client), [this](SteamBot::Client&) {
-                        std::chrono::seconds delay(0);
-                        for (const auto packageId : packageIds)
-                        {
-                            boost::this_fiber::sleep_for(delay);
-                            SteamBot::UI::OutputText() << "ClI: adding package " << toInteger(packageId);
-                            SteamBot::Modules::AddFreeLicense::add(packageId);
-                            delay=std::chrono::seconds(1);
-                        }
+                    bool success=false;
+                    SteamBot::Modules::Executor::execute(client, [this, &success](SteamBot::Client&) mutable {
+                        success=SteamBot::Modules::ViewStream::start(url);
                     });
-                    if (success)
-                    {
-                        std::cout << "I've asked Steam to add";
-                        for (const auto packageId : packageIds)
-                        {
-                            std::cout << " " << toInteger(packageId);
-                        }
-                        std::cout << " to your account" << std::endl;
-                    }
                 }
             }
         };
@@ -126,5 +115,5 @@ namespace
         }
     };
 
-    AddLicenseCommand::Init<AddLicenseCommand> init;
+    ViewStreamCommand::Init<ViewStreamCommand> init;
 }

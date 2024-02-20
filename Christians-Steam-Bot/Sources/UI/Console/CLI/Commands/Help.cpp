@@ -18,6 +18,7 @@
  */
 
 #include "UI/CLI.hpp"
+#include "UI/Command.hpp"
 
 #include "../Helpers.hpp"
 
@@ -25,29 +26,88 @@
 
 namespace
 {
-    class HelpCommand : public CLI::CLICommandBase
+    class HelpCommand : public SteamBot::UI::CommandBase
     {
     public:
-        HelpCommand(CLI& cli_)
-            : CLICommandBase(cli_, "help", "", "Show list of commands", false)
+        virtual bool global() const
         {
+            return true;
         }
 
-        virtual ~HelpCommand() =default;
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("help");
+            return string;
+        }
+
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("show command list or syntax");
+            return string;
+        }
+
+        virtual const boost::program_options::positional_options_description* positionals() const override
+        {
+            static auto const positional=[](){
+                auto positional=new boost::program_options::positional_options_description();
+                positional->add("command", 1);
+                return positional;
+            }();
+            return positional;
+        }
+
+        virtual const boost::program_options::options_description* options() const override
+        {
+            static auto const options=[](){
+                auto options=new boost::program_options::options_description();
+                options->add_options()
+                    ("command", "command")
+                    ;
+                return options;
+            }();
+            return options;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>&) override
+        class Execute : public ExecuteBase
         {
-            cli.showHelp();
-            return true;
+        private:
+            std::string command;
+
+        public:
+            using ExecuteBase::ExecuteBase;
+
+            virtual ~Execute() =default;
+
+        public:
+            virtual bool init(const boost::program_options::variables_map& options) override
+            {
+                const auto& var=options["command"];
+                if (!var.empty())
+                {
+                    command=var.as<std::string>();
+                }
+                return true;
+            }
+
+            virtual void execute(SteamBot::ClientInfo*) const override
+            {
+                if (command.empty())
+                {
+                    cli.printHelp(nullptr);
+                }
+                else
+                {
+                    cli.printHelp(&command);
+                }
+            }
+        };
+
+        virtual std::shared_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_shared<Execute>(cli);
         }
     };
 
-    HelpCommand::InitClass<HelpCommand> init;
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useHelpCommand()
-{
+    HelpCommand::Init<HelpCommand> init;
 }

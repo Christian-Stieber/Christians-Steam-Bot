@@ -18,8 +18,7 @@
  */
 
 #include "UI/CLI.hpp"
-
-#include "../Helpers.hpp"
+#include "UI/Command.hpp"
 
 #include "Client/Client.hpp"
 
@@ -27,46 +26,51 @@
 
 namespace
 {
-    class LaunchCommand : public CLI::CLICommandBase
+    class LaunchCommand : public SteamBot::UI::CommandBase
     {
     public:
-        LaunchCommand(CLI& cli_)
-            : CLICommandBase(cli_, "launch", "", "launch an existing client", true)
+        virtual bool global() const
         {
+            return false;
         }
 
-        virtual ~LaunchCommand() =default;
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("launch");
+            return string;
+        }
+
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("start an already configured client");
+            return string;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>&) override;
+        class Execute : public ExecuteBase
+        {
+        public:
+            using ExecuteBase::ExecuteBase;
+
+            virtual ~Execute() =default;
+
+        public:
+            virtual void execute(SteamBot::ClientInfo* clientInfo) const
+            {
+                SteamBot::Client::launch(*clientInfo);
+                std::cout << "launched client \"" << clientInfo->accountName << "\"" << std::endl;
+                std::cout << "NOTE: leave command mode to be able to see password/SteamGuard prompts!" << std::endl;
+
+                cli.currentAccount=clientInfo;
+                std::cout << "your current account is now \"" << cli.currentAccount->accountName << "\"" << std::endl;
+            }
+        };
+
+        virtual std::shared_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_shared<Execute>(cli);
+        }
     };
 
-    LaunchCommand::InitClass<LaunchCommand> init;
-}
-
-/************************************************************************/
-
-bool LaunchCommand::execute(SteamBot::ClientInfo* clientInfo, std::vector<std::string>& words)
-{
-    if (words.size()==1)
-    {
-        SteamBot::Client::launch(*clientInfo);
-        std::cout << "launched client \"" << clientInfo->accountName << "\"" << std::endl;
-        std::cout << "NOTE: leave command mode to be able to see password/SteamGuard prompts!" << std::endl;
-
-        cli.currentAccount=clientInfo;
-        std::cout << "your current account is now \"" << cli.currentAccount->accountName << "\"" << std::endl;
-
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useLaunchCommand()
-{
+    LaunchCommand::Init<LaunchCommand> init;
 }

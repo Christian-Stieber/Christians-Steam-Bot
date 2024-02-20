@@ -18,7 +18,7 @@
  */
 
 #include "UI/CLI.hpp"
-#include "../Helpers.hpp"
+#include "UI/Command.hpp"
 
 #include "Helpers/JSON.hpp"
 
@@ -26,32 +26,51 @@
 
 namespace
 {
-    class ListGroupsCommand : public CLI::CLICommandBase
+    class ListGroupsCommand : public SteamBot::UI::CommandBase
     {
     public:
-        ListGroupsCommand(CLI& cli_)
-            : CLICommandBase(cli_, "list-groups", "", "list groups", false)
+        virtual bool global() const
         {
+            return true;
         }
 
-        virtual ~ListGroupsCommand() =default;
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("list-groups");
+            return string;
+        }
+
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("list groups");
+            return string;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>&) override;
+        class Execute : public ExecuteBase
+        {
+        public:
+            using ExecuteBase::ExecuteBase;
+
+            virtual ~Execute() =default;
+
+        public:
+            virtual void execute(SteamBot::ClientInfo*) const override;
+        };
+
+        virtual std::shared_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_shared<Execute>(cli);
+        }
     };
 
-    ListGroupsCommand::InitClass<ListGroupsCommand> init1;
+    ListGroupsCommand::Init<ListGroupsCommand> init;
 }
 
 /************************************************************************/
 
-bool ListGroupsCommand::execute(SteamBot::ClientInfo*, std::vector<std::string>& words)
+void ListGroupsCommand::Execute::execute(SteamBot::ClientInfo*) const
 {
-    if (words.size()!=1)
-    {
-        return false;
-    }
-
     std::unordered_map<std::string, std::vector<const SteamBot::ClientInfo*>> groups;
 
     auto clients=SteamBot::ClientInfo::getClients();
@@ -78,12 +97,4 @@ bool ListGroupsCommand::execute(SteamBot::ClientInfo*, std::vector<std::string>&
         }
         std::cout << std::endl;
     }
-
-    return true;
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useListGroupsCommand()
-{
 }

@@ -18,61 +18,72 @@
  */
 
 #include "UI/CLI.hpp"
-#include "../Helpers.hpp"
+#include "UI/Command.hpp"
 
 #include "Modules/SaleQueue.hpp"
 #include "Modules/Executor.hpp"
 
 /************************************************************************/
 
+void SteamBot::UI::CLI::performSaleQueue()
+{
+    SteamBot::UI::OutputText() << "ClI: requested sale queue clearing";
+    SteamBot::SaleQueue::clear();
+}
+
+/************************************************************************/
+
 namespace
 {
-    class SaleQueueCommand : public CLI::CLICommandBase
+    class SaleQueueCommand : public SteamBot::UI::CommandBase
     {
     public:
-        SaleQueueCommand(CLI& cli_)
-            : CLICommandBase(cli_, "sale-queue", "", "clear all sale queues", true)
+        virtual bool global() const
         {
+            return false;
         }
 
-        virtual ~SaleQueueCommand() =default;
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("sale-queue");
+            return string;
+        }
+
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("clear current sale queues");
+            return string;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>&) override;
+        class Execute : public ExecuteBase
+        {
+        public:
+            using ExecuteBase::ExecuteBase;
+
+            virtual ~Execute() =default;
+
+        public:
+            virtual void execute(SteamBot::ClientInfo* clientInfo) const
+            {
+                if (auto client=clientInfo->getClient())
+                {
+                    bool success=SteamBot::Modules::Executor::executeWithFiber(client, [](SteamBot::Client& client) {
+                        SteamBot::UI::CLI::performSaleQueue();
+                    });
+                    if (success)
+                    {
+                        std::cout << "requested sale queue clearing for account " << client->getClientInfo().accountName << std::endl;
+                    }
+                }
+            }
+        };
+
+        virtual std::shared_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_shared<Execute>(cli);
+        }
     };
 
-    SaleQueueCommand::InitClass<SaleQueueCommand> init;
-}
-
-/************************************************************************/
-
-bool SaleQueueCommand::execute(SteamBot::ClientInfo* clientInfo, std::vector<std::string>& words)
-{
-    if (words.size()==1)
-    {
-        if (auto client=clientInfo->getClient())
-        {
-            bool success=SteamBot::Modules::Executor::executeWithFiber(client, [](SteamBot::Client& client) {
-                if (!SteamBot::SaleQueue::clear())
-                {
-                    SteamBot::UI::OutputText() << "Sale queue: error";
-                }
-            });
-            if (success)
-            {
-                std::cout << "requested sale queue for account " << client->getClientInfo().accountName << std::endl;
-            }
-        }
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useSaleQueueCommand()
-{
+    SaleQueueCommand::Init<SaleQueueCommand> init;
 }

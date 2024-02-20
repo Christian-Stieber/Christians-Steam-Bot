@@ -18,49 +18,53 @@
  */
 
 #include "UI/CLI.hpp"
-
-#include "../Helpers.hpp"
+#include "UI/Command.hpp"
 
 /************************************************************************/
 
 namespace
 {
-    class SelectCommand : public CLI::CLICommandBase
+    class SelectCommand : public SteamBot::UI::CommandBase
     {
     public:
-        SelectCommand(CLI& cli_)
-            : CLICommandBase(cli_, "select", "", "select a client as target for commands", true)
+        virtual bool global() const
         {
+            return false;
         }
 
-        virtual ~SelectCommand() =default;
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("select");
+            return string;
+        }
+
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("select the 'current' client");
+            return string;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>&) override;
+        class Execute : public ExecuteBase
+        {
+        public:
+            using ExecuteBase::ExecuteBase;
+
+            virtual ~Execute() =default;
+
+        public:
+            virtual void execute(SteamBot::ClientInfo* clientInfo) const
+            {
+                cli.currentAccount=clientInfo;
+                std::cout << "your current account is now \"" << cli.currentAccount->accountName << "\"" << std::endl;
+            }
+        };
+
+        virtual std::shared_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_shared<Execute>(cli);
+        }
     };
 
-    SelectCommand::InitClass<SelectCommand> init;
-}
-
-
-/************************************************************************/
-
-bool SelectCommand::execute(SteamBot::ClientInfo* clientInfo, std::vector<std::string>& words)
-{
-    if (words.size()==1)
-    {
-        cli.currentAccount=clientInfo;
-        std::cout << "your current account is now \"" << cli.currentAccount->accountName << "\"" << std::endl;
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useSelectCommand()
-{
+    SelectCommand::Init<SelectCommand> init;
 }

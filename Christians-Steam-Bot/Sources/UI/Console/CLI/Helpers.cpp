@@ -74,17 +74,3 @@ Helpers::OwnedGames::Ptr Helpers::getOwnedGames(const SteamBot::ClientInfo& clie
     }
     return ownedGames;
 }
-
-/************************************************************************/
-
-bool Helpers::parseNumber(std::string_view string, uint64_t& value)
-{
-    const auto last=string.data()+string.size();
-    const auto result=std::from_chars(string.data(), last, value);
-    if (result.ec==std::errc() && result.ptr==last)
-    {
-        return true;
-    }
-    std::cout << "\"" << string << "\" is not a valid number" << std::endl;
-    return false;
-}

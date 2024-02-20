@@ -17,56 +17,103 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#include "UI/CLI.hpp"
 
-#include "../Helpers.hpp"
+#include "UI/CLI.hpp"
+#include "UI/Command.hpp"
+
+#include "Client/Client.hpp"
 
 /************************************************************************/
 
 namespace
 {
-    class CreateCommand : public CLI::CLICommandBase
+    class CreateCommand : public SteamBot::UI::CommandBase
     {
     public:
-        CreateCommand(CLI& cli_)
-            : CLICommandBase(cli_, "create", "<account>", "create a new bot", false)
+        virtual bool global() const
         {
+            return true;
         }
 
-        virtual ~CreateCommand() =default;
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("create");
+            return string;
+        }
+
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("create a new bot");
+            return string;
+        }
+
+        virtual const boost::program_options::positional_options_description* positionals() const override
+        {
+            static auto const positional=[](){
+                auto positional=new boost::program_options::positional_options_description();
+                positional->add("account", 1);
+                return positional;
+            }();
+            return positional;
+        }
+
+        virtual const boost::program_options::options_description* options() const override
+        {
+            static auto const options=[](){
+                auto options=new boost::program_options::options_description();
+                options->add_options()
+                    ("account",
+                     boost::program_options::value<std::string>()->value_name("accountname")->required(),
+                     "bot account")
+                    ;
+                return options;
+            }();
+            return options;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>&) override;
+        class Execute : public ExecuteBase
+        {
+        private:
+            std::string account;
+
+        public:
+            using ExecuteBase::ExecuteBase;
+
+            virtual ~Execute() =default;
+
+        public:
+            virtual bool init(const boost::program_options::variables_map& options) override
+            {
+                assert(options.count("account")==1);
+                account=options["account"].as<std::string>();
+                return true;
+            }
+
+            virtual void execute(SteamBot::ClientInfo*) const
+            {
+                const auto clientInfo=SteamBot::ClientInfo::create(account);
+                if (clientInfo==nullptr)
+                {
+                    std::cout << "account \"" << account << "\" already exists" << std::endl;
+                }
+                else
+                {
+                    SteamBot::Client::launch(*clientInfo);
+                    std::cout << "launched new client \"" << account << "\"" << std::endl;
+                    std::cout << "NOTE: leave command mode to be able to see password/SteamGuard prompts!" << std::endl;
+
+                    cli.currentAccount=clientInfo;
+                    std::cout << "your current account is now \"" << cli.currentAccount->accountName << "\"" << std::endl;
+                }
+            }
+        };
+
+        virtual std::shared_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_shared<Execute>(cli);
+        }
     };
 
-    CreateCommand::InitClass<CreateCommand> init;
-}
-
-/************************************************************************/
-
-bool CreateCommand::execute(SteamBot::ClientInfo*, std::vector<std::string>& words)
-{
-    if (words.size()!=2) return false;
-
-    const auto clientInfo=SteamBot::ClientInfo::create(std::string(words[1]));
-    if (clientInfo==nullptr)
-    {
-        std::cout << "account \"" << words[1] << "\" already exists" << std::endl;
-    }
-    else
-    {
-        SteamBot::Client::launch(*clientInfo);
-        std::cout << "launched new client \"" << clientInfo->accountName << "\"" << std::endl;
-        std::cout << "NOTE: leave command mode to be able to see password/SteamGuard prompts!" << std::endl;
-
-        cli.currentAccount=clientInfo;
-        std::cout << "your current account is now \"" << cli.currentAccount->accountName << "\"" << std::endl;
-    }
-    return true;
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useCreateCommand()
-{
+    CreateCommand::Init<CreateCommand> init;
 }

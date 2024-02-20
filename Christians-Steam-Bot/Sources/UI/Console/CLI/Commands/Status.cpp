@@ -18,8 +18,8 @@
  */
 
 #include "UI/CLI.hpp"
-
-#include "../Helpers.hpp"
+#include "UI/Command.hpp"
+#include "UI/Table.hpp"
 
 #include "Client/Client.hpp"
 #include "Modules/Executor.hpp"
@@ -31,36 +31,63 @@
 
 namespace
 {
-    class StatusCommand : public CLI::CLICommandBase
+    class StatusCommand : public SteamBot::UI::CommandBase
     {
     public:
-        StatusCommand(CLI& cli_)
-            : CLICommandBase(cli_, "status", "", "Show list of known accounts", false)
+        virtual bool global() const
         {
+            return true;
         }
 
-        virtual ~StatusCommand() =default;
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("status");
+            return string;
+        }
+
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("show status of bot accounts");
+            return string;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>&) override;
+        class Execute : public ExecuteBase
+        {
+        public:
+            using ExecuteBase::ExecuteBase;
+
+            virtual ~Execute() =default;
+
+        public:
+            virtual void execute(SteamBot::ClientInfo*) const;
+        };
+
+        virtual std::shared_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_shared<Execute>(cli);
+        }
     };
 
-    StatusCommand::InitClass<StatusCommand> init;
+    StatusCommand::Init<StatusCommand> init;
 }
 
 /************************************************************************/
 
-bool StatusCommand::execute(SteamBot::ClientInfo*, std::vector<std::string>& words)
+void StatusCommand::Execute::execute(SteamBot::ClientInfo*) const
 {
-    if (words.size()>1) return false;
+    enum class Columns { Account, Status, Max };
+    SteamBot::UI::Table<Columns> table;
 
     for (auto clientInfo: SteamBot::ClientInfo::getClients())
     {
-        std::ostringstream output;
-        output << "   " << clientInfo->accountName;
+        decltype(table)::Line line;
+        line[Columns::Account] << clientInfo->accountName;
+
+        auto& status=line[Columns::Status];
         if (auto client=clientInfo->getClient())
         {
-            SteamBot::Modules::Executor::execute(std::move(client), [&output](SteamBot::Client& client) mutable {
+            SteamBot::Modules::Executor::execute(std::move(client), [&status](SteamBot::Client& client) mutable {
                 typedef SteamBot::Modules::Login::Whiteboard::LoginStatus LoginStatus;
                 typedef SteamBot::Modules::PlayGames::Whiteboard::PlayingGames PlayingGames;
                 typedef SteamBot::Modules::OwnedGames::Whiteboard::OwnedGames OwnedGames;
@@ -70,7 +97,7 @@ bool StatusCommand::execute(SteamBot::ClientInfo*, std::vector<std::string>& wor
                     break;
 
                 case LoginStatus::LoggingIn:
-                    output << "; logging in";
+                    status << "logging in";
                     break;
 
                 case LoginStatus::LoggedIn:
@@ -79,15 +106,15 @@ bool StatusCommand::execute(SteamBot::ClientInfo*, std::vector<std::string>& wor
                         assert(!playing->empty());
 
                         auto ownedGames=client.whiteboard.has<OwnedGames::Ptr>();
-                        const char* separator="; playing ";
+                        const char* separator="playing ";
                         for (SteamBot::AppID appId : *playing)
                         {
-                            output << separator << static_cast<std::underlying_type_t<decltype(appId)>>(appId);
+                            status << separator << static_cast<std::underlying_type_t<decltype(appId)>>(appId);
                             if (ownedGames)
                             {
                                 if (auto info=(*ownedGames)->getInfo(appId))
                                 {
-                                    output << " (" << info->name << ")";
+                                    status << " (" << info->name << ")";
                                 }
                             }
                             separator=", ";
@@ -95,20 +122,25 @@ bool StatusCommand::execute(SteamBot::ClientInfo*, std::vector<std::string>& wor
                     }
                     else
                     {
-                        output << "; logged in";
+                        status << "logged in";
                     }
                     break;
                 }
             });
         }
-        std::cout << output.view() << std::endl;
+
+        table.add(line);
     }
 
-    return true;
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useStatusCommand()
-{
+    table.sort(Columns::Account);
+    while (table.startLine())
+    {
+        std::cout << table.getContent(Columns::Account);
+        if (table.hasContent(Columns::Status))
+        {
+            std::cout << table.getFiller(Columns::Account) << " -> " << table.getContent(Columns::Status);
+        }
+        std::cout << '\n';
+    }
+    std::cout << std::flush;
 }

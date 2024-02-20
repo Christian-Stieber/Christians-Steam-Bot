@@ -18,7 +18,7 @@
  */
 
 #include "UI/CLI.hpp"
-#include "../Helpers.hpp"
+#include "UI/Command.hpp"
 
 #include "Client/Client.hpp"
 #include "Modules/Executor.hpp"
@@ -28,57 +28,90 @@
 
 namespace
 {
-    class SendInventoryCommand : public CLI::CLICommandBase
+    class SendInventoryCommand : public SteamBot::UI::CommandBase
     {
     public:
-        SendInventoryCommand(CLI& cli_)
-            : CLICommandBase(cli_, "send-inventory", "<recipient>", "send tradable items", true)
+        virtual bool global() const
         {
+            return false;
         }
 
-        virtual ~SendInventoryCommand() =default;
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("send-inventory");
+            return string;
+        }
+
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("send all tradable Steam items to another bot account");
+            return string;
+        }
+
+        virtual const boost::program_options::positional_options_description* positionals() const override
+        {
+            static auto const positional=[](){
+                auto positional=new boost::program_options::positional_options_description();
+                positional->add("recipient", 1);
+                return positional;
+            }();
+            return positional;
+        }
+
+        virtual const boost::program_options::options_description* options() const override
+        {
+            static auto const options=[](){
+                auto options=new boost::program_options::options_description();
+                options->add_options()
+                    ("recipient",
+                     boost::program_options::value<SteamBot::OptionBotName>()->value_name("accountname")->required(),
+                     "recipient account")
+                    ;
+                return options;
+            }();
+            return options;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>&) override;
+        class Execute : public ExecuteBase
+        {
+        private:
+            SteamBot::ClientInfo* clientInfo=nullptr;
+
+        public:
+            using ExecuteBase::ExecuteBase;
+
+            virtual ~Execute() =default;
+
+        public:
+            virtual bool init(const boost::program_options::variables_map& options) override
+            {
+                assert(options.count("recipient"));
+                clientInfo=options["recipient"].as<SteamBot::OptionBotName>().clientInfo;
+                return true;
+            }
+
+            virtual void execute(SteamBot::ClientInfo* clientInfo) const override
+            {
+                bool success=false;
+                if (auto client=clientInfo->getClient())
+                {
+                    SteamBot::Modules::Executor::execute(std::move(client), [this, &success](SteamBot::Client& client) {
+                        success=SteamBot::sendInventory(this->clientInfo);
+                    });
+                }
+                if (!success)
+                {
+                    std::cout << "failed to send inventory" << std::endl;
+                }
+            }
+        };
+
+        virtual std::shared_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_shared<Execute>(cli);
+        }
     };
 
-    SendInventoryCommand::InitClass<SendInventoryCommand> init;
-}
-
-/************************************************************************/
-
-bool SendInventoryCommand::execute(SteamBot::ClientInfo* clientInfo, std::vector<std::string>& words)
-{
-    if (words.size()==2)
-    {
-        if (auto partner=SteamBot::ClientInfo::find(words[1]))
-        {
-            bool success=false;
-            if (auto client=clientInfo->getClient())
-            {
-                SteamBot::Modules::Executor::execute(std::move(client), [partner, &success](SteamBot::Client& client) {
-                    success=SteamBot::sendInventory(partner);
-                });
-            }
-            if (!success)
-            {
-                std::cout << "failed to send inventory" << std::endl;
-            }
-        }
-        else
-        {
-            std::cout << "unknown account \"" << words[1] << "\"" << std::endl;
-        }
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useSendInventoryCommand()
-{
+    SendInventoryCommand::Init<SendInventoryCommand> init;
 }
