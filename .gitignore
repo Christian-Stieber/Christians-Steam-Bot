@@ -3,3 +3,4 @@ build
 x64
 packages
 vcpkg_installed
+ChristianSteamBot-*.deb
