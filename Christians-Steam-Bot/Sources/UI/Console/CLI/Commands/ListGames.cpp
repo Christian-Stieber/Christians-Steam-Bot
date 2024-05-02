@@ -117,8 +117,8 @@ namespace
 
         private:
             bool printAdult(const OwnedGames::GameInfo&) const;
-            bool checkEarlyAccess(const OwnedGames::GameInfo&) const;
-            bool checkAdult(const OwnedGames::GameInfo&) const;
+            bool isEarlyAccess(const OwnedGames::GameInfo&) const;
+            bool isAdult(const OwnedGames::GameInfo&) const;
             void outputGameList(SteamBot::ClientInfo&, const OwnedGames::Ptr::element_type&) const;
 
         public:
@@ -162,10 +162,23 @@ static void print(const SteamBot::Modules::LicenseList::Whiteboard::Licenses::Li
 
 /************************************************************************/
 
-bool ListGamesCommand::Execute::checkEarlyAccess(const OwnedGames::GameInfo& info) const
+bool ListGamesCommand::Execute::isEarlyAccess(const OwnedGames::GameInfo& info) const
 {
-    (void)info;
-    return true;
+    if (auto json=SteamBot::AppInfo::get(info.appId, "common", "genres"))
+    {
+        if (auto genres=json->if_object())
+        {
+            for (const auto& genre: *genres)
+            {
+                auto id=SteamBot::JSON::toNumber<int>(genre.value());
+                if (id==70)
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 /************************************************************************/
@@ -187,7 +200,7 @@ bool ListGamesCommand::Execute::printAdult(const OwnedGames::GameInfo& info) con
             }();
 
             bool first=true;
-            for (const auto descriptor: *descriptors)
+            for (const auto& descriptor: *descriptors)
             {
                 if (first)
                 {
@@ -216,20 +229,16 @@ bool ListGamesCommand::Execute::printAdult(const OwnedGames::GameInfo& info) con
 
 /************************************************************************/
 
-bool ListGamesCommand::Execute::checkAdult(const OwnedGames::GameInfo& info) const
+bool ListGamesCommand::Execute::isAdult(const OwnedGames::GameInfo& info) const
 {
-    if (adult)
+    if (auto json=SteamBot::AppInfo::get(info.appId, "common", "content_descriptors"))
     {
-        if (auto json=SteamBot::AppInfo::get(info.appId, "common", "content_descriptors"))
+        if (auto descriptors=json->if_object())
         {
-            if (auto descriptors=json->if_object())
-            {
-                return !descriptors->empty();
-            }
+            return !descriptors->empty();
         }
-        return false;
     }
-    return true;
+    return false;
 }
 
 /************************************************************************/
@@ -243,12 +252,11 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
         for (const auto& item : ownedGames.games)
         {
             const auto& info=*(item.second);
-            if (checkAdult(info) && checkEarlyAccess(info))
+            if ((!adult || isAdult(info)) &&
+                (!earlyAccess || isEarlyAccess(info)) &&
+                (!gamesRegex || std::regex_search(info.name, *gamesRegex)))
             {
-                if (!gamesRegex || std::regex_search(info.name, *gamesRegex))
-                {
-                    games.emplace_back(item.second);
-                }
+                games.emplace_back(item.second);
             }
         }
     }
@@ -266,6 +274,19 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
     for (const auto& game : games)
     {
         std::cout << std::setw(8) << static_cast<std::underlying_type_t<decltype(game->appId)>>(game->appId) << ": " << game->name;
+
+        {
+            bool adult_=isAdult(*game);
+            bool earlyAccess_=isEarlyAccess(*game);
+            if (adult_ || earlyAccess_)
+            {
+                std::cout << " (";
+                if (adult_) std::cout << "Adult";
+                if (adult_ && earlyAccess_) std::cout << ", ";
+                if (earlyAccess_) std::cout << "Early Access";
+                std::cout << ")";
+            }
+        }
 
         if (game->lastPlayed!=decltype(game->lastPlayed)())
         {
