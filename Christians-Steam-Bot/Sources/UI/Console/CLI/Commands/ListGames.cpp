@@ -25,8 +25,12 @@
 #include "Client/Client.hpp"
 #include "Helpers/StringCompare.hpp"
 #include "Helpers/Time.hpp"
+#include "Helpers/JSON.hpp"
 #include "Modules/PackageData.hpp"
 #include "EnumString.hpp"
+#include "AppInfo.hpp"
+
+#include "steamdatabase/protobufs/steam/enums_productinfo.pb.h"
 
 #include <iomanip>
 
@@ -82,6 +86,15 @@ namespace
                     ("games",
                      boost::program_options::value<SteamBot::OptionRegex>()->value_name("regex"),
                      "games to list")
+                    ("playtime",
+                     boost::program_options::bool_switch(),
+                     "sort by playtime")
+                    ("adult",
+                     boost::program_options::bool_switch(),
+                     "only list adult games")
+                    ("early-access",
+                     boost::program_options::bool_switch(),
+                     "only list early access games")
                     ;
                 return options;
             }();
@@ -93,6 +106,9 @@ namespace
         {
         private:
             std::optional<SteamBot::OptionRegex> gamesRegex;
+            bool adult=false;
+            bool earlyAccess=false;
+            bool sortPlaytime=false;
 
         public:
             using ExecuteBase::ExecuteBase;
@@ -100,11 +116,17 @@ namespace
             virtual ~Execute() =default;
 
         private:
+            bool printAdult(const OwnedGames::GameInfo&) const;
+            bool checkEarlyAccess(const OwnedGames::GameInfo&) const;
+            bool checkAdult(const OwnedGames::GameInfo&) const;
             void outputGameList(SteamBot::ClientInfo&, const OwnedGames::Ptr::element_type&) const;
 
         public:
             virtual bool init(const boost::program_options::variables_map& options) override
             {
+                adult=options["adult"].as<bool>();
+                earlyAccess=options["early-access"].as<bool>();
+                sortPlaytime=options["playtime"].as<bool>();
                 if (options.count("games"))
                 {
                     gamesRegex=options["games"].as<SteamBot::OptionRegex>();
@@ -131,10 +153,83 @@ static void print(const SteamBot::Modules::LicenseList::Whiteboard::Licenses::Li
     auto packageIdValue=static_cast<std::underlying_type_t<decltype(license.packageId)>>(license.packageId);
     std::cout << "pkg " << packageIdValue
               << " purchased " << SteamBot::Time::toString(license.timeCreated, false);
+    // std::cout << " (" << SteamBot::enumToStringAlways(license.licenseType) << ")";
     if (license.paymentMethod!=SteamBot::PaymentMethod::None)
     {
         std::cout << " (" << SteamBot::enumToStringAlways(license.paymentMethod) << ")";
     }
+}
+
+/************************************************************************/
+
+bool ListGamesCommand::Execute::checkEarlyAccess(const OwnedGames::GameInfo& info) const
+{
+    (void)info;
+    return true;
+}
+
+/************************************************************************/
+
+bool ListGamesCommand::Execute::printAdult(const OwnedGames::GameInfo& info) const
+{
+    if (auto json=SteamBot::AppInfo::get(info.appId, "common", "content_descriptors"))
+    {
+        if (auto descriptors=json->if_object())
+        {
+            static const auto& names=[]() -> const auto& {
+                static std::array<std::string_view,5> myNames;
+                myNames.at(k_EContentDescriptor_NudityOrSexualContent-1)="nudity/sexual content";
+                myNames.at(k_EContentDescriptor_FrequentViolenceOrGore-1)="frequent violence/gore";
+                myNames.at(k_EContentDescriptor_AdultOnlySexualContent-1)="adult sexual content";
+                myNames.at(k_EContentDescriptor_GratuitousSexualContent-1)="gratuitous sexual content";
+                myNames.at(k_EContentDescriptor_AnyMatureContent-1)="any mature content";
+                return myNames;
+            }();
+
+            bool first=true;
+            for (const auto descriptor: *descriptors)
+            {
+                if (first)
+                {
+                    std::cout << "\n          adult: ";
+                    first=false;
+                }
+                else
+                {
+                    std::cout << ", ";
+                }
+                auto id=SteamBot::JSON::toNumber<EContentDescriptorID>(descriptor.value());
+                if (id>=1 && id<=names.size())
+                {
+                    std::cout << names[id-1];
+                }
+                else
+                {
+                    std::cout << id;
+                }
+            }
+            return !first;
+        }
+    }
+    return false;
+}
+
+/************************************************************************/
+
+bool ListGamesCommand::Execute::checkAdult(const OwnedGames::GameInfo& info) const
+{
+    if (adult)
+    {
+        if (auto json=SteamBot::AppInfo::get(info.appId, "common", "content_descriptors"))
+        {
+            if (auto descriptors=json->if_object())
+            {
+                return !descriptors->empty();
+            }
+        }
+        return false;
+    }
+    return true;
 }
 
 /************************************************************************/
@@ -147,20 +242,31 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
     {
         for (const auto& item : ownedGames.games)
         {
-            if (!gamesRegex || std::regex_search(item.second->name, *gamesRegex))
+            const auto& info=*(item.second);
+            if (checkAdult(info) && checkEarlyAccess(info))
             {
-                games.emplace_back(item.second);
+                if (!gamesRegex || std::regex_search(info.name, *gamesRegex))
+                {
+                    games.emplace_back(item.second);
+                }
             }
         }
     }
 
-    std::sort(games.begin(), games.end(), [](const ItemType& left, const ItemType& right) -> bool {
+    std::sort(games.begin(), games.end(), [this](const ItemType& left, const ItemType& right) -> bool {
+        if (sortPlaytime)
+        {
+            auto compare=(left->playtimeForever<=>right->playtimeForever);
+            if (compare==std::strong_ordering::less) return true;
+            if (compare==std::strong_ordering::greater) return false;
+        }
         return SteamBot::caseInsensitiveStringCompare_less(left->name, right->name);
     });
 
     for (const auto& game : games)
     {
         std::cout << std::setw(8) << static_cast<std::underlying_type_t<decltype(game->appId)>>(game->appId) << ": " << game->name;
+
         if (game->lastPlayed!=decltype(game->lastPlayed)())
         {
             std::cout << "; last played " << SteamBot::Time::toString(game->lastPlayed);
@@ -184,6 +290,12 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
                 ::print(*license);
             }
         }
+
+        if (adult)
+        {
+            printAdult(*game);
+        }
+
         std::cout << "\n";
     }
     std::cout << std::flush;
