@@ -22,7 +22,7 @@
  * https://stackoverflow.com/questions/51060801/how-to-suppress-leaksanitizer-report-when-running-under-fsanitize-address
  */
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && defined(__SANITIZE_ADDRESS__)
 extern "C"
 {
     const char* __asan_default_options()
