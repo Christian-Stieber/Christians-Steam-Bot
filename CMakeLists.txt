@@ -11,7 +11,7 @@ add_subdirectory(Christians-Steam-Framework)
 
 ######################################################################
 
-list(APPEND SRCS Main)
+list(APPEND SRCS Main Asan)
 
 list(APPEND SRCS UI/Console/Console UI/Console/Table UI/Console/Manager_Linux)
 list(APPEND SRCS UI/Console/CLI/CLI UI/Console/CLI/Helpers)
