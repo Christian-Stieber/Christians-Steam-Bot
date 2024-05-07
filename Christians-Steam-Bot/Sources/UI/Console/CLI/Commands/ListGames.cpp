@@ -27,6 +27,7 @@
 #include "Helpers/Time.hpp"
 #include "Helpers/JSON.hpp"
 #include "Modules/PackageData.hpp"
+#include "Modules/PackageInfo.hpp"
 #include "EnumString.hpp"
 #include "AppInfo.hpp"
 
@@ -151,8 +152,12 @@ namespace
 static void print(const SteamBot::Modules::LicenseList::Whiteboard::Licenses::LicenseInfo& license)
 {
     auto packageIdValue=static_cast<std::underlying_type_t<decltype(license.packageId)>>(license.packageId);
-    std::cout << "pkg " << packageIdValue
-              << " purchased " << SteamBot::Time::toString(license.timeCreated, false);
+    std::cout << "pkg " << packageIdValue;
+    if (auto info=SteamBot::Modules::PackageInfo::Info::get(license.packageId))
+    {
+        std::cout << " (" << info->packageName << ")";
+    }
+    std::cout << " purchased " << SteamBot::Time::toString(license.timeCreated, false);
     // std::cout << " (" << SteamBot::enumToStringAlways(license.licenseType) << ")";
     if (license.paymentMethod!=SteamBot::PaymentMethod::None)
     {
@@ -271,6 +276,13 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
         return SteamBot::caseInsensitiveStringCompare_less(left->name, right->name);
     });
 
+    struct
+    {
+        std::chrono::minutes playtime{0};
+        unsigned int earlyAccess=0;
+        unsigned int adult=0;
+    } totals;
+
     for (const auto& game : games)
     {
         std::cout << std::setw(8) << static_cast<std::underlying_type_t<decltype(game->appId)>>(game->appId) << ": " << game->name;
@@ -281,9 +293,17 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
             if (adult_ || earlyAccess_)
             {
                 std::cout << " (";
-                if (adult_) std::cout << "Adult";
+                if (adult_)
+                {
+                    std::cout << "Adult";
+                    totals.adult++;
+                }
                 if (adult_ && earlyAccess_) std::cout << ", ";
-                if (earlyAccess_) std::cout << "Early Access";
+                if (earlyAccess_)
+                {
+                    std::cout << "Early Access";
+                    totals.earlyAccess++;
+                }
                 std::cout << ")";
             }
         }
@@ -295,21 +315,14 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
         if (game->playtimeForever.count()!=0)
         {
             std::cout << "; playtime " << SteamBot::Time::toString(game->playtimeForever);
+            totals.playtime+=game->playtimeForever;
         }
 
         auto licenses=CLI::Helpers::getLicenseInfo(clientInfo, game->appId);
-        if (licenses.size()==1)
+        for (auto& license : licenses)
         {
-            std::cout << "; ";
-            ::print(*(licenses.front()));
-        }
-        else
-        {
-            for (auto& license : licenses)
-            {
-                std::cout << "\n          ";
-                ::print(*license);
-            }
+            std::cout << "\n          ";
+            ::print(*license);
         }
 
         if (adult)
@@ -319,7 +332,10 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
 
         std::cout << "\n";
     }
-    std::cout << std::flush;
+
+    std::cout << "listed " << games.size() << " games (" << totals.adult << " adult, "
+              << totals.earlyAccess << " early access) with a total playtime of "
+              << SteamBot::Time::toString(totals.playtime) << "\n";
 }
 
 /************************************************************************/
