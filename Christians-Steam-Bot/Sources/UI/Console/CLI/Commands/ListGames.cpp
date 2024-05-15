@@ -155,7 +155,10 @@ static void print(const SteamBot::Modules::LicenseList::Whiteboard::Licenses::Li
     std::cout << "pkg " << packageIdValue;
     if (auto info=SteamBot::Modules::PackageInfo::Info::get(license.packageId))
     {
-        std::cout << " (" << info->packageName << ")";
+        if (!info->packageName.empty())
+        {
+            std::cout << " (" << info->packageName << ")";
+        }
     }
     std::cout << " purchased " << SteamBot::Time::toString(license.timeCreated, false);
     // std::cout << " (" << SteamBot::enumToStringAlways(license.licenseType) << ")";
