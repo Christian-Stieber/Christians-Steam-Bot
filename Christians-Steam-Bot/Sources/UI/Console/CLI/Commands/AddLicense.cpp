@@ -27,8 +27,14 @@
 
 namespace
 {
-    class AddLicenseCommand : public SteamBot::UI::CommandBase
+    template <typename LICENSETYPE> requires (std::is_same_v<LICENSETYPE, SteamBot::PackageID> || std::is_same_v<LICENSETYPE, SteamBot::AppID>)
+        class AddLicenseCommand  : public SteamBot::UI::CommandBase
     {
+    private:
+        static constexpr std::string_view commandName{std::is_same_v<LICENSETYPE, SteamBot::PackageID> ? "add-license" : "add-app"};
+        static constexpr std::string_view optionName{std::is_same_v<LICENSETYPE, SteamBot::PackageID> ? "packageid" : "appid"};
+        static constexpr std::string optionValue{std::is_same_v<LICENSETYPE, SteamBot::PackageID> ? "package-id" : "app-id"};
+
     public:
         virtual bool global() const
         {
@@ -39,7 +45,7 @@ namespace
         {
             static auto const positional=[](){
                 auto positional=new boost::program_options::positional_options_description();
-                positional->add("packageid", -1);
+                positional->add(optionName.data(), -1);
                 return positional;
             }();
             return positional;
@@ -47,8 +53,7 @@ namespace
 
         virtual const std::string_view& command() const override
         {
-            static const std::string_view string("add-license");
-            return string;
+            return commandName;
         }
 
         virtual const std::string_view& description() const override
@@ -62,9 +67,9 @@ namespace
             static auto const options=[this](){
                 auto options=new boost::program_options::options_description();
                 options->add_options()
-                    ("packageid",
-                     boost::program_options::value<std::vector<SteamBot::PackageID>>()->value_name("package-id")->multitoken()->required(),
-                     "(free) package-ids to add")
+                    (optionName.data(),
+                     boost::program_options::value<std::vector<LICENSETYPE>>()->value_name(optionValue)->multitoken()->required(),
+                     "(free) games to add")
                     ;
                 return options;
             }();
@@ -75,7 +80,7 @@ namespace
         class Execute : public ExecuteBase
         {
         private:
-            std::vector<SteamBot::PackageID> packageIds;
+            std::vector<LICENSETYPE> packageIds;
 
         public:
             using ExecuteBase::ExecuteBase;
@@ -85,9 +90,9 @@ namespace
         public:
             virtual bool init(const boost::program_options::variables_map& options) override
             {
-                if (options.count("packageid"))
+                if (options.count(optionName.data()))
                 {
-                    packageIds=options["packageid"].as<std::vector<SteamBot::PackageID>>();
+                    packageIds=options[optionName.data()].template as<decltype(packageIds)>();
                     return true;
                 }
                 return false;
@@ -102,14 +107,14 @@ namespace
                         for (const auto packageId : packageIds)
                         {
                             boost::this_fiber::sleep_for(delay);
-                            SteamBot::UI::OutputText() << "ClI: adding package " << toInteger(packageId);
+                            SteamBot::UI::OutputText() << "ClI: adding " << optionValue << " " << toInteger(packageId);
                             SteamBot::Modules::AddFreeLicense::add(packageId);
                             delay=std::chrono::seconds(1);
                         }
                     });
                     if (success)
                     {
-                        std::cout << "I've asked Steam to add";
+                        std::cout << "I've asked Steam to add " << optionValue << "s";
                         for (const auto packageId : packageIds)
                         {
                             std::cout << " " << toInteger(packageId);
@@ -126,5 +131,6 @@ namespace
         }
     };
 
-    AddLicenseCommand::Init<AddLicenseCommand> init;
+    AddLicenseCommand<SteamBot::PackageID>::Init<AddLicenseCommand<SteamBot::PackageID>> init_PackageID;
+    AddLicenseCommand<SteamBot::AppID>::Init<AddLicenseCommand<SteamBot::AppID>> init_AppID;
 }
