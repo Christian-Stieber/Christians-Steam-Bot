@@ -24,6 +24,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Sources\Asan.cpp" />
     <ClCompile Include="Sources\Main.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\CLI.cpp" />
     <ClCompile Include="Sources\UI\Console\CLI\Commands\AddLicense.cpp" />
@@ -54,6 +55,9 @@
     <ClCompile Include="Sources\UI\Console\Table.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Headers\UI\CLI.hpp" />
+    <ClInclude Include="Headers\UI\Command.hpp" />
+    <ClInclude Include="Headers\UI\Table.hpp" />
     <ClInclude Include="Sources\UI\Console\CLI\Helpers.hpp" />
     <ClInclude Include="Sources\UI\Console\Console.hpp" />
   </ItemGroup>
