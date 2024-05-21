@@ -54,9 +54,9 @@ namespace
         virtual const boost::program_options::positional_options_description* positionals() const override
         {
             static auto const positional=[](){
-                auto positional=new boost::program_options::positional_options_description();
-                positional->add("url", -1);
-                return positional;
+                auto positional_=new boost::program_options::positional_options_description();
+                positional_->add("url", -1);
+                return positional_;
             }();
             return positional;
         }
@@ -64,13 +64,13 @@ namespace
         virtual const boost::program_options::options_description* options() const override
         {
             static auto const options=[](){
-                auto options=new boost::program_options::options_description();
-                options->add_options()
+                auto options_=new boost::program_options::options_description();
+                options_->add_options()
                     ("url",
                      boost::program_options::value<SteamBot::OptionURL>()->value_name("url"),
                      "page url")
                     ;
-                return options;
+                return options_;
             }();
             return options;
         }

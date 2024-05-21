@@ -112,6 +112,9 @@ static void printOffers(const SteamBot::TradeOffers::TradeOffers& offers)
         direction="outgoing";
         partnerLabel="to";
         break;
+
+    default:
+        assert(false);
     }
 
     if (offers.offers.size()>0)
@@ -140,7 +143,7 @@ void ListTradeOffersCommand::Execute::execute(SteamBot::ClientInfo* clientInfo) 
 {
     if (auto client=clientInfo->getClient())
     {
-        bool success=SteamBot::Modules::Executor::executeWithFiber(client, [](SteamBot::Client& client) {
+        bool success=SteamBot::Modules::Executor::executeWithFiber(client, [](SteamBot::Client&) {
             if (auto offers=SteamBot::TradeOffers::getIncoming())
             {
                 printOffers(*offers);

@@ -25,6 +25,7 @@
 #include "Modules/CardFarmer.hpp"
 
 #include "Settings.hpp"
+#include "Main.hpp"
 
 #include "Modules/AutoAccept.hpp"
 #include "Modules/AutoLoadTradeoffers.hpp"

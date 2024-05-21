@@ -20,7 +20,6 @@
 #include "./Console.hpp"
 #include "Helpers/Time.hpp"
 
-#include <iostream>
 #include <time.h>
 
 /************************************************************************/
@@ -98,8 +97,10 @@ void ConsoleUI::requestPassword(ClientInfo& clientInfo, ResultParam<std::string>
         case PasswordType::SteamGuard_App:
             passwordTypeString="steamguard-code (mobile app)";
             break;
+
+        default:
+            assert(false);
         }
-        assert(passwordTypeString!=nullptr);
 
         std::string entered;
         do

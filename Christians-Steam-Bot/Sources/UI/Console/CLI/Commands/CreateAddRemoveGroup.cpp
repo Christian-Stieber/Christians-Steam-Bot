@@ -69,10 +69,11 @@ namespace
             case ChangeMode::Add:
             case ChangeMode::Remove:
                 return !clients.empty();
-            }
 
-            assert(false);
-            return false;
+            default:
+                assert(false);
+                return false;
+            }
         }
 
         virtual void execute(SteamBot::ClientInfo*) const override
@@ -114,6 +115,9 @@ namespace
                                         SteamBot::JSON::eraseItem(json, "Groups");
                                     }
                                     return true;
+
+                                default:
+                                    assert(false);
                                 }
                             }
                         }
@@ -126,10 +130,11 @@ namespace
 
                         case ChangeMode::Remove:
                             return false;
-                        }
 
-                        assert(false);
-                        return false;
+                        default:
+                            assert(false);
+                            return false;
+                        }
                     });
                 }
             }
@@ -148,6 +153,9 @@ namespace
                 case ChangeMode::Remove:
                     std::cout << "cannot remove from group \"" << groupName << "\": no such group" << std::endl;
                     break;
+
+                default:
+                    assert(false);
                 }
             }
         }
@@ -169,10 +177,10 @@ namespace
         virtual const boost::program_options::positional_options_description* positionals() const override
         {
             static auto const positional=[](){
-                auto positional=new boost::program_options::positional_options_description();
-                positional->add("group", 1);
-                positional->add("account", -1);
-                return positional;
+                auto positional_=new boost::program_options::positional_options_description();
+                positional_->add("group", 1);
+                positional_->add("account", -1);
+                return positional_;
             }();
             return positional;
         }
@@ -201,8 +209,8 @@ namespace
         virtual const boost::program_options::options_description* options() const override
         {
             static auto const options=[](){
-                auto options=new boost::program_options::options_description();
-                options->add_options()
+                auto options_=new boost::program_options::options_description();
+                options_->add_options()
                     ("group",
                      boost::program_options::value<std::string>()->value_name("name")->required(),
                      "group id to create")
@@ -210,7 +218,7 @@ namespace
                      boost::program_options::value<std::vector<SteamBot::OptionBotName>>()->value_name("bot-name")->multitoken()->required(),
                      "accounts to add")
                     ;
-                return options;
+                return options_;
             }();
             return options;
         }
@@ -247,8 +255,8 @@ namespace
         virtual const boost::program_options::options_description* options() const override
         {
             static auto const options=[](){
-                auto options=new boost::program_options::options_description();
-                options->add_options()
+                auto options_=new boost::program_options::options_description();
+                options_->add_options()
                     ("group",
                      boost::program_options::value<std::string>()->value_name("name")->required(),
                      "group id to add to")
@@ -256,7 +264,7 @@ namespace
                      boost::program_options::value<std::vector<SteamBot::OptionBotName>>()->value_name("bot-name")->multitoken()->required(),
                      "accounts to add")
                     ;
-                return options;
+                return options_;
             }();
             return options;
         }
@@ -293,8 +301,8 @@ namespace
         virtual const boost::program_options::options_description* options() const override
         {
             static auto const options=[](){
-                auto options=new boost::program_options::options_description();
-                options->add_options()
+                auto options_=new boost::program_options::options_description();
+                options_->add_options()
                     ("group",
                      boost::program_options::value<std::string>()->value_name("name")->required(),
                      "group id to remove to")
@@ -302,7 +310,7 @@ namespace
                      boost::program_options::value<std::vector<SteamBot::OptionBotName>>()->value_name("bot-name")->multitoken()->required(),
                      "accounts to remove")
                     ;
-                return options;
+                return options_;
             }();
             return options;
         }

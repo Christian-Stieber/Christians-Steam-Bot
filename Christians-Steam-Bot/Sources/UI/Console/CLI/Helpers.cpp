@@ -44,7 +44,7 @@ std::vector<std::shared_ptr<const Helpers::LicenseInfo>> Helpers::getLicenseInfo
     std::vector<std::shared_ptr<const LicenseInfo>> result;
     if (auto client=clientInfo.getClient())
     {
-        SteamBot::Modules::Executor::execute(std::move(client), [appId, &result](SteamBot::Client& client) mutable {
+        SteamBot::Modules::Executor::execute(std::move(client), [appId, &result](SteamBot::Client&) mutable {
             auto packages=SteamBot::Modules::PackageData::getPackageInfo(appId);
             for (const auto& package : packages)
             {
@@ -65,8 +65,8 @@ Helpers::OwnedGames::Ptr Helpers::getOwnedGames(const SteamBot::ClientInfo& clie
     OwnedGames::Ptr ownedGames;
     if (auto client=clientInfo.getClient())
     {
-        SteamBot::Modules::Executor::execute(std::move(client), [&ownedGames](SteamBot::Client& client) mutable {
-            if (auto games=client.whiteboard.has<decltype(ownedGames)>())
+        SteamBot::Modules::Executor::execute(std::move(client), [&ownedGames](SteamBot::Client& client_) mutable {
+            if (auto games=client_.whiteboard.has<decltype(ownedGames)>())
             {
                 ownedGames=*games;
             }

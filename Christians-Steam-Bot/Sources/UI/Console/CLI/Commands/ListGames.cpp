@@ -72,9 +72,9 @@ namespace
         virtual const boost::program_options::positional_options_description* positionals() const override
         {
             static auto const positional=[](){
-                auto positional=new boost::program_options::positional_options_description();
-                positional->add("games", -1);
-                return positional;
+                auto positional_=new boost::program_options::positional_options_description();
+                positional_->add("games", -1);
+                return positional_;
             }();
             return positional;
         }
@@ -82,8 +82,8 @@ namespace
         virtual const boost::program_options::options_description* options() const override
         {
             static auto const options=[](){
-                auto options=new boost::program_options::options_description();
-                options->add_options()
+                auto options_=new boost::program_options::options_description();
+                options_->add_options()
                     ("games",
                      boost::program_options::value<SteamBot::OptionRegex>()->value_name("regex"),
                      "games to list")
@@ -97,7 +97,7 @@ namespace
                      boost::program_options::bool_switch(),
                      "only list early access games")
                     ;
-                return options;
+                return options_;
             }();
             return options;
         }
@@ -220,9 +220,9 @@ bool ListGamesCommand::Execute::printAdult(const OwnedGames::GameInfo& info) con
                     std::cout << ", ";
                 }
                 auto id=SteamBot::JSON::toNumber<EContentDescriptorID>(descriptor.value());
-                if (id>=1 && id<=names.size())
+                if (id>=1 && id<=static_cast<int>(names.size()))
                 {
-                    std::cout << names[id-1];
+                    std::cout << names[static_cast<size_t>(id-1)];
                 }
                 else
                 {

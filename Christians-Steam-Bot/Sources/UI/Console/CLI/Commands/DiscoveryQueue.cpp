@@ -60,7 +60,7 @@ namespace
             {
                 if (auto client=clientInfo->getClient())
                 {
-                    bool success=SteamBot::Modules::Executor::executeWithFiber(client, [](SteamBot::Client& client) {
+                    bool success=SteamBot::Modules::Executor::executeWithFiber(client, [](SteamBot::Client&) {
                         SteamBot::UI::OutputText() << "ClI: requested discovery queue clearing";
                         SteamBot::DiscoveryQueue::clear();
                     });

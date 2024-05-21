@@ -58,9 +58,9 @@ namespace
         virtual const boost::program_options::positional_options_description* positionals() const override
         {
             static auto const positional=[](){
-                auto positional=new boost::program_options::positional_options_description();
-                positional->add("appids", -1);
-                return positional;
+                auto positional_=new boost::program_options::positional_options_description();
+                positional_->add("appids", -1);
+                return positional_;
             }();
             return positional;
         }
@@ -78,13 +78,13 @@ namespace
         virtual const boost::program_options::options_description* options() const override
         {
             static auto const options=[this](){
-                auto options=new boost::program_options::options_description();
-                options->add_options()
+                auto options_=new boost::program_options::options_description();
+                options_->add_options()
                     ("appids",
                      boost::program_options::value<std::vector<SteamBot::AppID>>()->value_name("app-id")->multitoken()->required(),
                      (play ? "appids to play" : "appids to stop"))
                     ;
-                return options;
+                return options_;
             }();
             return options;
         }

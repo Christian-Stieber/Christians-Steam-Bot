@@ -51,9 +51,9 @@ namespace
         virtual const boost::program_options::positional_options_description* positionals() const override
         {
             static auto const positional=[](){
-                auto positional=new boost::program_options::positional_options_description();
-                positional->add("recipient", 1);
-                return positional;
+                auto positional_=new boost::program_options::positional_options_description();
+                positional_->add("recipient", 1);
+                return positional_;
             }();
             return positional;
         }
@@ -61,13 +61,13 @@ namespace
         virtual const boost::program_options::options_description* options() const override
         {
             static auto const options=[](){
-                auto options=new boost::program_options::options_description();
-                options->add_options()
+                auto options_=new boost::program_options::options_description();
+                options_->add_options()
                     ("recipient",
                      boost::program_options::value<SteamBot::OptionBotName>()->value_name("accountname")->required(),
                      "recipient account")
                     ;
-                return options;
+                return options_;
             }();
             return options;
         }
@@ -91,12 +91,12 @@ namespace
                 return true;
             }
 
-            virtual void execute(SteamBot::ClientInfo* clientInfo) const override
+            virtual void execute(SteamBot::ClientInfo* clientInfo_) const override
             {
                 bool success=false;
-                if (auto client=clientInfo->getClient())
+                if (auto client=clientInfo_->getClient())
                 {
-                    SteamBot::Modules::Executor::execute(std::move(client), [this, &success](SteamBot::Client& client) {
+                    SteamBot::Modules::Executor::execute(std::move(client), [this, &success](SteamBot::Client&) {
                         success=SteamBot::sendInventory(this->clientInfo);
                     });
                 }

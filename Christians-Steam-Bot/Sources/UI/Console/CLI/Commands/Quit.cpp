@@ -59,8 +59,8 @@ namespace
             {
                 if (auto client=clientInfo->getClient())
                 {
-                    bool success=SteamBot::Modules::Executor::execute(client, [](SteamBot::Client& client) {
-                        client.quit(false);
+                    bool success=SteamBot::Modules::Executor::execute(client, [](SteamBot::Client& client_) {
+                        client_.quit(false);
                     });
                     if (success)
                     {

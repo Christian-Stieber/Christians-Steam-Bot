@@ -76,7 +76,7 @@ namespace
 
 void StatusCommand::Execute::execute(SteamBot::ClientInfo*) const
 {
-    enum class Columns { Account, Status, Max };
+    enum class Columns : unsigned int { Account, Status, Max };
     SteamBot::UI::Table<Columns> table;
 
     for (auto clientInfo: SteamBot::ClientInfo::getClients())
@@ -85,9 +85,9 @@ void StatusCommand::Execute::execute(SteamBot::ClientInfo*) const
         line[Columns::Account] << clientInfo->accountName;
 
         auto& status=line[Columns::Status];
-        if (auto client=clientInfo->getClient())
+        if (auto client_=clientInfo->getClient())
         {
-            SteamBot::Modules::Executor::execute(std::move(client), [&status](SteamBot::Client& client) mutable {
+            SteamBot::Modules::Executor::execute(std::move(client_), [&status](SteamBot::Client& client) mutable {
                 typedef SteamBot::Modules::Login::Whiteboard::LoginStatus LoginStatus;
                 typedef SteamBot::Modules::PlayGames::Whiteboard::PlayingGames PlayingGames;
                 typedef SteamBot::Modules::OwnedGames::Whiteboard::OwnedGames OwnedGames;
@@ -125,6 +125,9 @@ void StatusCommand::Execute::execute(SteamBot::ClientInfo*) const
                         status << "logged in";
                     }
                     break;
+
+                default:
+                    assert(false);
                 }
             });
         }

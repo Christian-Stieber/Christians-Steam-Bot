@@ -58,12 +58,12 @@ namespace
         virtual const boost::program_options::options_description* options() const override
         {
             static auto const options=[](){
-                auto options=new boost::program_options::options_description();
-                options->add_options()
+                auto options_=new boost::program_options::options_description();
+                options_->add_options()
                     ("tradable", boost::program_options::bool_switch()->value_name("tradable")->default_value(false), "only tradable items")
                     ("items", boost::program_options::value<SteamBot::OptionRegex>()->value_name("regex"), "items")
                     ;
-                return options;
+                return options_;
             }();
             return options;
         }
@@ -174,7 +174,7 @@ void ListInventoryCommand::Execute::execute(SteamBot::ClientInfo* clientInfo) co
 {
     if (auto client=clientInfo->getClient())
     {
-        bool success=SteamBot::Modules::Executor::executeWithFiber(client, [self=shared_from_this<Execute>()](SteamBot::Client& client) {
+        bool success=SteamBot::Modules::Executor::executeWithFiber(client, [self=shared_from_this<Execute>()](SteamBot::Client&) {
             SteamBot::UI::OutputText() << "ClI: list inventory";
             auto inventory=SteamBot::Inventory::get();
             if (inventory)

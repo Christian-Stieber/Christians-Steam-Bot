@@ -45,13 +45,13 @@ static const auto& getCommands()
     typedef std::map<std::string_view, std::unique_ptr<SteamBot::UI::CommandBase>> CommandList;
 
     static const CommandList& commands=*([](){
-        auto commands=new CommandList;
-        SteamBot::Startup::InitBase<SteamBot::UI::CommandBase>::initAll([commands](std::unique_ptr<SteamBot::UI::CommandBase> command) {
+        auto commands_=new CommandList;
+        SteamBot::Startup::InitBase<SteamBot::UI::CommandBase>::initAll([commands_](std::unique_ptr<SteamBot::UI::CommandBase> command) {
             const auto key=command->command();
-            const bool success=commands->try_emplace(key, std::move(command)).second;
+            const bool success=commands_->try_emplace(key, std::move(command)).second;
             assert(success);
         });
-        return commands;
+        return commands_;
     }());
 
     return commands;
@@ -186,20 +186,20 @@ void SteamBot::UI::CommandBase::print(std::ostream& stream) const
 
 /************************************************************************/
 
-void CLI::printHelp(const std::string* command)
+void CLI::printHelp(const std::string* theCommand)
 {
     const auto& commands=getCommands();
 
-    if (command!=nullptr)
+    if (theCommand!=nullptr)
     {
-        auto iterator=commands.find(*command);
+        auto iterator=commands.find(*theCommand);
         if (iterator!=commands.end())
         {
             iterator->second->print(std::cout);
         }
         else
         {
-            std::cout << "unknown command \"" << *command << "\"" << std::endl;
+            std::cout << "unknown command \"" << *theCommand << "\"" << std::endl;
         }
     }
     else
@@ -234,7 +234,7 @@ void CLI::printHelp(const std::string* command)
  * Expands things like @groupname or *, or just copies the name.
  */
 
-std::vector<SteamBot::ClientInfo*> expandAccountName(std::string_view name)
+static std::vector<SteamBot::ClientInfo*> expandAccountName(std::string_view name)
 {
     std::vector<SteamBot::ClientInfo*> result;
 

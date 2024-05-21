@@ -24,6 +24,8 @@
 #include "Modules/OwnedGames.hpp"
 #include "Modules/LicenseList.hpp"
 
+#include <iostream>
+
 /************************************************************************/
 
 namespace SteamBot
@@ -61,6 +63,16 @@ namespace SteamBot
             virtual void outputText(ClientInfo&, std::string) override;
             virtual void requestPassword(ClientInfo&, ResultParam<std::string>, PasswordType, bool(*)(const std::string&)) override;
         };
+    }
+}
+
+/************************************************************************/
+
+namespace SteamBot
+{
+    namespace UI
+    {
+        std::ostream& operator<<(std::ostream&, const SteamBot::UI::Base::ClientInfo&);
     }
 }
 

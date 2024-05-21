@@ -62,7 +62,7 @@ namespace
             {
                 if (auto client=clientInfo->getClient())
                 {
-                    bool success=SteamBot::Modules::Executor::executeWithFiber(client, [](SteamBot::Client& client) {
+                    bool success=SteamBot::Modules::Executor::executeWithFiber(client, [](SteamBot::Client&) {
                         SteamBot::ExecuteFibers execute;
                         execute.run([](){
                             SteamBot::UI::CLI::performSaleQueue();

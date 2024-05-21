@@ -161,11 +161,12 @@ public:
             case Mode::NoInput:
                 changed.c_cc[VMIN] = 1;
                 changed.c_cc[VTIME] = 0;
-                changed.c_lflag &= ~(ICANON | ECHO);
+                changed.c_lflag &= ~static_cast<unsigned int>(ICANON | ECHO);
                 break;
 
             case Mode::LineInputNoEcho:
-                changed.c_lflag &= ~(ECHO);
+                changed.c_lflag &= ~static_cast<unsigned int>(ECHO);
+                break;
 
             default:
                 assert(false);

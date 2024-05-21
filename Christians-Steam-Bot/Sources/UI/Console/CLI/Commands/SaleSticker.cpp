@@ -69,7 +69,7 @@ namespace
             {
                 if (auto client=clientInfo->getClient())
                 {
-                    bool success=SteamBot::Modules::Executor::executeWithFiber(client, [](SteamBot::Client& client) {
+                    bool success=SteamBot::Modules::Executor::executeWithFiber(client, [](SteamBot::Client&) {
                         SteamBot::UI::CLI::performSaleSticker();
                     });
                     if (success)
