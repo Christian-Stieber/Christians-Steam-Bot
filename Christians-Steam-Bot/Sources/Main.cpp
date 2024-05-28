@@ -108,7 +108,7 @@ std::unique_ptr<SteamBot::UI::Base> SteamBot::UI::create()
 void application()
 {
     SteamBot::Modules::PersonaState::use();
-    // SteamBot::Modules::CardFarmer::use();
+    SteamBot::Modules::CardFarmer::use();
 
     settings();
 
