@@ -18,145 +18,132 @@
  */
 
 #include "UI/CLI.hpp"
-#include "Settings.hpp"
-#include "EnumString.hpp"
+#include "UI/Command.hpp"
+#include "UI/Table.hpp"
 
-#include "../Helpers.hpp"
+#include "Settings.hpp"
+#include "Modules/Executor.hpp"
 
 /************************************************************************/
 
 namespace
 {
-    class SetCommand : public CLI::CLICommandBase
+    class SettingsCommand : public SteamBot::UI::CommandBase
     {
     public:
-        SetCommand(CLI& cli_)
-            : CLICommandBase(cli_, "set", "[<name> <value>]", "change a setting for an account", true)
+        virtual bool global() const
         {
+            return false;
         }
 
-        virtual ~SetCommand() =default;
+        virtual const std::string_view& command() const override
+        {
+            static const std::string_view string("set");
+            return string;
+        }
 
-    private:
-        static void setVariable(const SteamBot::ClientInfo*, std::string_view name, std::string_view value);
-        static void showVariables(const SteamBot::ClientInfo*);
+        virtual const std::string_view& description() const override
+        {
+            static const std::string_view string("list or change settings");
+            return string;
+        }
+
+        virtual const boost::program_options::positional_options_description* positionals() const override
+        {
+            static auto const positional=[](){
+                auto positional_=new boost::program_options::positional_options_description();
+                positional_->add("name", 1);
+                positional_->add("value", 2);
+                return positional_;
+            }();
+            return positional;
+        }
+
+        virtual const boost::program_options::options_description* options() const override
+        {
+            static auto const options=[](){
+                auto options_=new boost::program_options::options_description();
+                options_->add_options()
+                    ("name",
+                     boost::program_options::value<std::string>(),
+                     "setting name")
+                    ("value",
+                     boost::program_options::value<std::string>(),
+                     "setting value")
+                    ;
+                return options_;
+            }();
+            return options;
+        }
 
     public:
-        virtual bool execute(SteamBot::ClientInfo*, std::vector<std::string>&) override;
+        class Execute : public ExecuteBase
+        {
+        private:
+            std::string name;
+            std::string value;
+
+        public:
+            using ExecuteBase::ExecuteBase;
+
+            virtual ~Execute() =default;
+
+        public:
+            virtual bool init(const boost::program_options::variables_map& options) override
+            {
+                if (options.count("name")) name=options["name"].as<std::string>();
+                if (options.count("value")) value=options["value"].as<std::string>();
+                return true;
+            }
+
+            virtual void execute(SteamBot::ClientInfo* clientInfo) const override;
+        };
+
+        virtual std::shared_ptr<ExecuteBase> makeExecute(SteamBot::UI::CLI& cli) const override
+        {
+            return std::make_shared<Execute>(cli);
+        }
     };
 
-    SetCommand::InitClass<SetCommand> init;
+    SettingsCommand::Init<SettingsCommand> init;
 }
 
 /************************************************************************/
 
-void SetCommand::showVariables(const SteamBot::ClientInfo* clientInfo)
+void SettingsCommand::Execute::execute(SteamBot::ClientInfo* clientInfo) const
 {
-    const auto& settings=SteamBot::ClientSettings::get();
-
-    auto variables=settings.getVariables();
-    for (const auto& variable : variables)
+    if (auto client=clientInfo->getClient())
     {
-        std::cout << "   " << variable.first << " (" << SteamBot::enumToStringAlways(variable.second) << ")";
-        if (clientInfo!=nullptr)
+        std::map<std::string_view, std::string> items;
+        SteamBot::Modules::Executor::execute(std::move(client), [&items](SteamBot::Client&) mutable {
+            items=SteamBot::Settings::getValues();
+        });
+
+        enum class Columns : unsigned int { Name, Value, Max };
+        SteamBot::UI::Table<Columns> table;
+
+        for (const auto& item: items)
         {
-            switch(variable.second)
+            decltype(table)::Line line;
+            line[Columns::Name] << item.first;
+            if (!item.second.empty())
             {
-            case SteamBot::ClientSettings::Type::Bool:
-                {
-                    auto value=settings.getBool(variable.first, clientInfo->accountName);
-                    if (value)
-                    {
-                        std::cout << ": " << (*value ? "on" : "off");
-                    }
-                }
-                break;
-
-            default:
-                assert(false);
+                line[Columns::Value] << item.second;
             }
+            table.add(line);
         }
-        std::cout << std::endl;
-    }
-}
 
-/************************************************************************/
+        table.sort(Columns::Name);
 
-static const struct BoolValues
-{
-    std::string_view string;
-    bool value;
-} boolValues[]=
-{
-    { "on", true },
-    { "off", false },
-
-    { "enable", true },
-    { "disable", false },
-
-    { "yes", true },
-    { "no", false },
-
-    { "true", true },
-    { "false", false },
-
-    { "1", true },
-    { "0", false }
-};
-
-/************************************************************************/
-
-void SetCommand::setVariable(const SteamBot::ClientInfo* clientInfo, std::string_view name, std::string_view value)
-{
-    const auto& settings=SteamBot::ClientSettings::get();
-
-    auto type=settings.getType(name);
-    switch(type)
-    {
-    case SteamBot::ClientSettings::Type::Bool:
-        for (const auto& item : boolValues)
+        while (table.startLine())
         {
-            if (item.string==value)
+            std::cout << table.getContent(Columns::Name);
+            if (table.hasContent(Columns::Value))
             {
-                settings.setBool(name, clientInfo->accountName, item.value);
-                break;
+                std::cout << table.getFiller(Columns::Name) << " -> " << table.getContent(Columns::Value);
             }
+            std::cout << '\n';
         }
-        break;
-
-    default:
-        assert(false);
+        std::cout << std::flush;
     }
-}
-
-/************************************************************************/
-
-bool SetCommand::execute(SteamBot::ClientInfo* clientInfo, std::vector<std::string>& words)
-{
-    if (words.size()==3)
-    {
-        // set <name> <value>
-        setVariable(clientInfo, words[1], words[2]);
-    }
-    else if (words.size()==2)
-    {
-        // set <name> -> clear
-        SteamBot::ClientSettings::get().clear(clientInfo->accountName, words[1]);
-    }
-    else if (words.size()==1)
-    {
-        // set -> show all
-        showVariables(clientInfo);
-    }
-    else
-    {
-        return false;
-    }
-    return true;
-}
-
-/************************************************************************/
-
-void SteamBot::UI::CLI::useSettingsCommand()
-{
 }

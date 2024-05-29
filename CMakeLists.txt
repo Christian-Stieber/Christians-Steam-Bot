@@ -40,4 +40,4 @@ addSource("UI/Console/CLI" CLI Helpers)
 addSource("UI/Console/CLI/Commands"
   Launch Quit Status Select Create Exit Help HandleTrade ListTradeOffers ListGames AddLicense
   DiscoveryQueue SaleSticker SaleQueue SaleEvent ListInventory SendInventory PlayStopGame
-  ViewStream StopStream CreateAddRemoveGroup ListGroups)
+  ViewStream StopStream CreateAddRemoveGroup ListGroups Settings)

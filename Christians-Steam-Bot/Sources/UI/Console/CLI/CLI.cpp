@@ -46,7 +46,7 @@ static const auto& getCommands()
 
     static const CommandList& commands=*([](){
         auto commands_=new CommandList;
-        SteamBot::Startup::InitBase<SteamBot::UI::CommandBase>::initAll([commands_](std::unique_ptr<SteamBot::UI::CommandBase> command) {
+        SteamBot::Startup::InitBase<SteamBot::UI::CommandBase>::create([commands_](std::unique_ptr<SteamBot::UI::CommandBase> command) {
             const auto key=command->command();
             const bool success=commands_->try_emplace(key, std::move(command)).second;
             assert(success);
