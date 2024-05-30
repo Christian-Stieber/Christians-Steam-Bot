@@ -93,16 +93,18 @@ namespace
             {
                 const bool hasName=options.count("name");
                 const bool hasValue=options.count("value");
-                if (hasName==hasValue)
+
+                if (hasName)
                 {
-                    if (hasName)
+                    name=options["name"].as<std::string>();
+                    if (hasValue)
                     {
-                        name=options["name"].as<std::string>();
                         value=options["value"].as<std::string>();
                     }
                     return true;
                 }
-                return false;
+
+                return !hasValue;
             }
 
             virtual void execute(SteamBot::ClientInfo* clientInfo) const override;
