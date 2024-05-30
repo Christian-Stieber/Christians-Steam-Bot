@@ -91,9 +91,18 @@ namespace
         public:
             virtual bool init(const boost::program_options::variables_map& options) override
             {
-                if (options.count("name")) name=options["name"].as<std::string>();
-                if (options.count("value")) value=options["value"].as<std::string>();
-                return true;
+                const bool hasName=options.count("name");
+                const bool hasValue=options.count("value");
+                if (hasName==hasValue)
+                {
+                    if (hasName)
+                    {
+                        name=options["name"].as<std::string>();
+                        value=options["value"].as<std::string>();
+                    }
+                    return true;
+                }
+                return false;
             }
 
             virtual void execute(SteamBot::ClientInfo* clientInfo) const override;
@@ -114,36 +123,56 @@ void SettingsCommand::Execute::execute(SteamBot::ClientInfo* clientInfo) const
 {
     if (auto client=clientInfo->getClient())
     {
-        std::map<std::string_view, std::string> items;
-        SteamBot::Modules::Executor::execute(std::move(client), [&items](SteamBot::Client&) mutable {
-            items=SteamBot::Settings::getValues();
-        });
-
-        enum class Columns : unsigned int { Name, Value, Max };
-        SteamBot::UI::Table<Columns> table;
-
-        for (const auto& item: items)
+        if (name.empty() && value.empty())
         {
-            decltype(table)::Line line;
-            line[Columns::Name] << item.first;
-            if (!item.second.empty())
+            std::map<std::string_view, std::string> items;
+            SteamBot::Modules::Executor::execute(std::move(client), [&items](SteamBot::Client&) mutable {
+                items=SteamBot::Settings::getValues();
+            });
+
+            enum class Columns : unsigned int { Name, Value, Max };
+            SteamBot::UI::Table<Columns> table;
+
+            for (const auto& item: items)
             {
-                line[Columns::Value] << item.second;
+                decltype(table)::Line line;
+                line[Columns::Name] << item.first;
+                if (!item.second.empty())
+                {
+                    line[Columns::Value] << item.second;
+                }
+                table.add(line);
             }
-            table.add(line);
+
+            table.sort(Columns::Name);
+
+            while (table.startLine())
+            {
+                std::cout << table.getContent(Columns::Name);
+                if (table.hasContent(Columns::Value))
+                {
+                    std::cout << table.getFiller(Columns::Name) << " -> " << table.getContent(Columns::Value);
+                }
+                std::cout << '\n';
+            }
+            std::cout << std::flush;
         }
-
-        table.sort(Columns::Name);
-
-        while (table.startLine())
+        else
         {
-            std::cout << table.getContent(Columns::Name);
-            if (table.hasContent(Columns::Value))
+            bool success=false;
+
+            SteamBot::Modules::Executor::execute(std::move(client), [&success, this](SteamBot::Client&) {
+                success=SteamBot::Settings::changeValue(name, value);
+            });
+
+            if (success)
             {
-                std::cout << table.getFiller(Columns::Name) << " -> " << table.getContent(Columns::Value);
+                std::cout << "changed setting" << std::endl;
             }
-            std::cout << '\n';
+            else
+            {
+                std::cout << "failed to change setting (bad name or invalid value)" << std::endl;
+            }
         }
-        std::cout << std::flush;
     }
 }
