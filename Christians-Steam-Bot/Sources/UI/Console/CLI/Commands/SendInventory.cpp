@@ -64,7 +64,7 @@ namespace
                 auto options_=new boost::program_options::options_description();
                 options_->add_options()
                     ("recipient",
-                     boost::program_options::value<SteamBot::OptionBotName>()->value_name("accountname")->required(),
+                     boost::program_options::value<SteamBot::OptionBotName>()->value_name("accountname"),
                      "recipient account")
                     ;
                 return options_;
@@ -86,8 +86,10 @@ namespace
         public:
             virtual bool init(const boost::program_options::variables_map& options) override
             {
-                assert(options.count("recipient"));
-                clientInfo=options["recipient"].as<SteamBot::OptionBotName>().clientInfo;
+                if (options.count("recipient"))
+                {
+                    clientInfo=options["recipient"].as<SteamBot::OptionBotName>().clientInfo;
+                }
                 return true;
             }
 
