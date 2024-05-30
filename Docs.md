@@ -44,19 +44,27 @@ gives a list of known account names, and their status in the bot
 
 # Basic actions
 
-* `[<accountname>:] list-games [<regex>]`\
+* `[<accountname>:] list-games [--adult] {--early-access] [--playtime] [<regex>]`\
    list games owned by the account. The number displayed is the `app-id`.\
    If a regular expression pattern is provided, only lists games matching the pattern.\
-   Note: if you don't want to bother with regexes, just typing a string will usually just find games with that text in their name.
+   Note: if you don't want to bother with regexes, just typing a string will usually just find games with that text in their name.\
+   `--adult` and `--early-access` options will only list those.\
+   `--playtime` option will sort by playtime instead of game name.
 * `[<accountname>:] play-game <app-id>`\
   `[<accountname>:] stop-game <app-id>`\
   start/stop "playing" that specified game
-* `[<accountname>:] add-license <app-id>`\
+* `[<accountname>:] add-license <package-id>`\
+  add a free license (F2P, demo) to the account
+* `[<accountname>:] add-app <app-id>`\
   add a free license (F2P, demo) to the account
 * `[<accountname>:] clear-queue`\
   clear one discovery queue.
 * `[<accountname>:] sale-sticker`\
   claim a sale sticker, if available.
+* `[<accountname>:] view-stream url`\
+  `[<accountname>:] stop-stream url`\
+  Start/stop "watching" a stream on a given Steam page. Note that while this exists to get drops, it does not detect
+  when the drops have been given.
 
 # Complex actions
 
@@ -77,10 +85,11 @@ gives a list of known account names, and their status in the bot
 * `[<accountname>:] list-tradeoffers`\
   list incoming trade offers
 
-* `[<accountname>:] send-inventory <accountname>`\
+* `[<accountname>:] send-inventory [<accountname>]`\
   sends (all/the first 100) tradable items from the inventory to the other account.\
   Note that the recipient account must also be configured on this bot, at least for now.\
-  Also note that you will have confirm the trade as usual; the bot doesn't do that (and likely never will).
+  Also note that you will have confirm the trade as usual; the bot doesn't do that (and likely never will).\
+  A `send-inventory-recipient` setting is provided as the default recipient.
 
 * `[<accountname>:] accept-trade <tradeofferid>`\
   accepts a trade.\
@@ -89,8 +98,24 @@ gives a list of known account names, and their status in the bot
 * `[<accountname>:] decline-trade <tradeofferid>`\
   declines a trade.
 
-* `[<accountname>:] set auto-accept-bot-gifts on/off`\
-  (persistently) enable/disable auto-accept gifts from other bot accounts
+# (Persistent) settings
+
+* `[<accountname>:] set`\
+  list all settings and their current values
+
+* `[<accountname>:] set name value`\
+  change a setting. This will only accept valid values.
+
+* `[<accountname>:] set name`\
+  reset the setting to default value.
+
+Current settings are:
+
+* `card-farmer-enable`: to enable/disable card farming.\
+  Accepted values are various `bool` representations, such as `on`, `off`, `yes`, `no` etc.
+
+* `send-inventory-recipient`: the default account for the `send-inventory` command.`\
+  Accepted values are valid bot account names.
 
 # Group management
 

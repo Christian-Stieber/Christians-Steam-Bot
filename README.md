@@ -8,6 +8,6 @@ Basically, a console-only bot that makes most of the current Framework available
 * sending inventories to another bot account
 * accepting/cancelling trades
 * some account information
-* automated logins to maintain booster pack eligibility
+* card farming
 
 [Usage](Docs.md)
