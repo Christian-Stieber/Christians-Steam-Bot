@@ -10,7 +10,10 @@
 
 cmake_minimum_required(VERSION 3.25)
 
-project(ChristiansSteamBot CXX)
+project(ChristiansSteamBot
+  LANGUAGES CXX
+  HOMEPAGE_URL "https://github.com/Christian-Stieber/Christians-Steam-Bot"
+  VERSION 0.0.1)
 add_executable(${PROJECT_NAME})
 
 ######################################################################
@@ -41,3 +44,14 @@ addSource("UI/Console/CLI/Commands"
   Launch Quit Status Select Create Exit Help HandleTrade ListTradeOffers ListGames AddLicense
   DiscoveryQueue SaleSticker SaleQueue SaleEvent ListInventory SendInventory PlayStopGame
   ViewStream StopStream CreateAddRemoveGroup ListGroups Settings)
+
+######################################################################
+
+install(TARGETS ${PROJECT_NAME})
+
+######################################################################
+
+configure_file("${PROJECT_SOURCE_DIR}/CPack.cmake" "${PROJECT_BINARY_DIR}/CPackOptions.cmake" @ONLY)
+set (CPACK_PROJECT_CONFIG_FILE "${PROJECT_BINARY_DIR}/CPackOptions.cmake")
+
+include(CPack)
