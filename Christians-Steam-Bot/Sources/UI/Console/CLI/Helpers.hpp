@@ -20,6 +20,7 @@
 #pragma once
 
 #include "Client/Client.hpp"
+#include "Modules/BadgeData.hpp"
 
 #include "../Console.hpp"
 
@@ -39,9 +40,20 @@ public:
     ~Helpers();
 
 public:
-    typedef SteamBot::Modules::OwnedGames::Whiteboard::OwnedGames OwnedGames;
-    static OwnedGames::Ptr getOwnedGames(const SteamBot::ClientInfo&);
-
     typedef SteamBot::Modules::LicenseList::Whiteboard::Licenses::LicenseInfo LicenseInfo;
     static std::vector<std::shared_ptr<const LicenseInfo>> getLicenseInfo(const SteamBot::ClientInfo&, SteamBot::AppID);
+
+public:
+    typedef SteamBot::Modules::OwnedGames::Whiteboard::OwnedGames OwnedGames;
+    typedef SteamBot::Modules::BadgeData::Whiteboard::BadgeData BadgeData;
+
+    class GameInfo
+    {
+    public:
+        OwnedGames::Ptr ownedGames;
+        BadgeData::Ptr badgeData;
+
+    public:
+        GameInfo(const SteamBot::ClientInfo&);
+    };
 };

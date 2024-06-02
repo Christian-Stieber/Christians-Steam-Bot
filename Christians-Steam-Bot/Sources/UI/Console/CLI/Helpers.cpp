@@ -60,17 +60,19 @@ std::vector<std::shared_ptr<const Helpers::LicenseInfo>> Helpers::getLicenseInfo
 
 /************************************************************************/
 
-Helpers::OwnedGames::Ptr Helpers::getOwnedGames(const SteamBot::ClientInfo& clientInfo)
+Helpers::GameInfo::GameInfo(const SteamBot::ClientInfo& clientInfo)
 {
-    OwnedGames::Ptr ownedGames;
     if (auto client=clientInfo.getClient())
     {
-        SteamBot::Modules::Executor::execute(std::move(client), [&ownedGames](SteamBot::Client& client_) mutable {
+        SteamBot::Modules::Executor::execute(std::move(client), [this](SteamBot::Client& client_) {
             if (auto games=client_.whiteboard.has<decltype(ownedGames)>())
             {
                 ownedGames=*games;
             }
+            if (auto badges=client_.whiteboard.has<decltype(badgeData)>())
+            {
+                badgeData=*badges;
+            }
         });
     }
-    return ownedGames;
 }

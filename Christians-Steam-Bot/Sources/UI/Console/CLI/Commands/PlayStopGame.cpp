@@ -26,7 +26,7 @@
 
 /************************************************************************/
 
-typedef SteamBot::Modules::PlayGames::Messageboard::PlayGame PlayGame;
+typedef SteamBot::Modules::PlayGames::Messageboard::PlayGames PlayGames;
 
 /************************************************************************/
 
@@ -119,13 +119,13 @@ namespace
                     bool success=SteamBot::Modules::Executor::execute(client, [this](SteamBot::Client&) mutable {
                         for (auto appId : appIds)
                         {
-                            PlayGame::play(appId, play);
+                            PlayGames::play(appId, play);
                         }
                     });
 
                     if (success)
                     {
-                        auto ownedGames=CLI::Helpers::getOwnedGames(client->getClientInfo());
+                        auto ownedGames=std::move(CLI::Helpers::GameInfo{client->getClientInfo()}.ownedGames);
                         std::cout << (play ? "started" : "stopped") << " game(s):";
                         for (auto appId : appIds)
                         {

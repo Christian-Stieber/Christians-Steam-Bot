@@ -120,7 +120,7 @@ namespace
             bool printAdult(const OwnedGames::GameInfo&) const;
             bool isEarlyAccess(const OwnedGames::GameInfo&) const;
             bool isAdult(const OwnedGames::GameInfo&) const;
-            void outputGameList(SteamBot::ClientInfo&, const OwnedGames::Ptr::element_type&) const;
+            void outputGameList(SteamBot::ClientInfo&, const CLI::Helpers::GameInfo&) const;
 
         public:
             virtual bool init(const boost::program_options::variables_map& options) override
@@ -251,13 +251,13 @@ bool ListGamesCommand::Execute::isAdult(const OwnedGames::GameInfo& info) const
 
 /************************************************************************/
 
-void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo, const OwnedGames::Ptr::element_type& ownedGames) const
+void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo, const CLI::Helpers::GameInfo& gameInfo) const
 {
     typedef std::shared_ptr<const OwnedGames::GameInfo> ItemType;
 
     std::vector<ItemType> games;
     {
-        for (const auto& item : ownedGames.games)
+        for (const auto& item : gameInfo.ownedGames->games)
         {
             const auto& info=*(item.second);
             if ((!adult || isAdult(info)) &&
@@ -333,6 +333,20 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
             printAdult(*game);
         }
 
+        if (gameInfo.badgeData)
+        {
+            auto iterator=gameInfo.badgeData->badges.find(game->appId);
+            if (iterator!=gameInfo.badgeData->badges.end())
+            {
+                if (iterator->second.cardsEarned!=iterator->second.cardsReceived)
+                {
+                    std::cout << "\n          ";
+                    std::cout << iterator->second.cardsEarned << " cards earned; ";
+                    std::cout << iterator->second.cardsReceived << " cards received";
+                }
+            }
+        }
+
         std::cout << "\n";
     }
 
@@ -345,9 +359,10 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
 
 void ListGamesCommand::Execute::execute(SteamBot::ClientInfo* clientInfo) const
 {
-    if (auto ownedGames=CLI::Helpers::getOwnedGames(*clientInfo))
+    CLI::Helpers::GameInfo gameInfo(*clientInfo);
+    if (gameInfo.ownedGames)
     {
-        outputGameList(*clientInfo, *ownedGames);
+        outputGameList(*clientInfo, gameInfo);
     }
     else
     {
