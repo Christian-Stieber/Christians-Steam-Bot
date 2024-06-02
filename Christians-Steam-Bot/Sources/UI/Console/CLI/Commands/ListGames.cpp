@@ -96,6 +96,9 @@ namespace
                     ("early-access",
                      boost::program_options::bool_switch(),
                      "only list early access games")
+                    ("farmable",
+                     boost::program_options::bool_switch(),
+                     "only list games with remaining card drops")
                     ;
                 return options_;
             }();
@@ -109,6 +112,7 @@ namespace
             std::optional<SteamBot::OptionRegex> gamesRegex;
             bool adult=false;
             bool earlyAccess=false;
+            bool farmable=false;
             bool sortPlaytime=false;
 
         public:
@@ -120,6 +124,7 @@ namespace
             bool printAdult(const OwnedGames::GameInfo&) const;
             bool isEarlyAccess(const OwnedGames::GameInfo&) const;
             bool isAdult(const OwnedGames::GameInfo&) const;
+            bool isFarmable(const OwnedGames::GameInfo&, const CLI::Helpers::BadgeData*) const;
             void outputGameList(SteamBot::ClientInfo&, const CLI::Helpers::GameInfo&) const;
 
         public:
@@ -127,6 +132,7 @@ namespace
             {
                 adult=options["adult"].as<bool>();
                 earlyAccess=options["early-access"].as<bool>();
+                farmable=options["farmable"].as<bool>();
                 sortPlaytime=options["playtime"].as<bool>();
                 if (options.count("games"))
                 {
@@ -251,6 +257,21 @@ bool ListGamesCommand::Execute::isAdult(const OwnedGames::GameInfo& info) const
 
 /************************************************************************/
 
+bool ListGamesCommand::Execute::isFarmable(const OwnedGames::GameInfo& info, const CLI::Helpers::BadgeData* badgeData) const
+{
+    if (badgeData!=nullptr)
+    {
+        auto iterator=badgeData->badges.find(info.appId);
+        if (iterator!=badgeData->badges.end())
+        {
+            return iterator->second.cardsReceived<iterator->second.cardsEarned;
+        }
+    }
+    return false;
+}
+
+/************************************************************************/
+
 void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo, const CLI::Helpers::GameInfo& gameInfo) const
 {
     typedef std::shared_ptr<const OwnedGames::GameInfo> ItemType;
@@ -262,6 +283,7 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
             const auto& info=*(item.second);
             if ((!adult || isAdult(info)) &&
                 (!earlyAccess || isEarlyAccess(info)) &&
+                (!farmable || isFarmable(info, gameInfo.badgeData.get())) &&
                 (!gamesRegex || std::regex_search(info.name, *gamesRegex)))
             {
                 games.emplace_back(item.second);
@@ -338,10 +360,10 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
             auto iterator=gameInfo.badgeData->badges.find(game->appId);
             if (iterator!=gameInfo.badgeData->badges.end())
             {
-                if (iterator->second.cardsEarned!=iterator->second.cardsReceived)
+                if (iterator->second.cardsReceived<iterator->second.cardsEarned)
                 {
                     std::cout << "\n          ";
-                    std::cout << iterator->second.cardsEarned << " cards earned; ";
+                    std::cout << iterator->second.cardsEarned << " cards earned, ";
                     std::cout << iterator->second.cardsReceived << " cards received";
                 }
             }
