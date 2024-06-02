@@ -2,8 +2,26 @@
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "christians-steam-framework",
   "version": "0.0.1",
+
   "dependencies": [
-    "openssl", "protobuf"
+      { "name": "boost-asio", "version>=": "1.81.0" },
+      { "name": "boost-context", "version>=": "1.81.0" },
+      { "name": "boost-system", "version>=": "1.81.0" },
+      { "name": "boost-log", "version>=": "1.81.0" },
+      { "name": "boost-iostreams", "features": [ "zlib" ], "version>=": "1.81.0" },
+      { "name": "boost-fiber", "version>=": "1.81.0" },
+      { "name": "boost-program-options", "version>=": "1.81.0" },
+      { "name": "boost-type-index", "version>=": "1.81.0" },
+      { "name": "boost-json", "version>=": "1.81.0" },
+      { "name": "boost-url", "version>=": "1.81.0" },
+      { "name": "openssl" },
+      { "name": "protobuf" }
   ],
-  "builtin-baseline": "8be970aaeaf19fd2663aaf5888478483f9742e55"
+
+  "overrides": [
+      { "name": "openssl" , "version": "3.3.0#0" },
+      { "name": "protobuf", "version": "3.21.12#2" }
+  ],
+
+  "builtin-baseline": "47364fbc300756f64f7876b549d9422d5f3ec0d3"
 }
