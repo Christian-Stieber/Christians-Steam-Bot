@@ -10,6 +10,8 @@
 
 cmake_minimum_required(VERSION 3.25)
 
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 project(ChristiansSteamBot
   LANGUAGES CXX
   HOMEPAGE_URL "https://github.com/Christian-Stieber/Christians-Steam-Bot"
