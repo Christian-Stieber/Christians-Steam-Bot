@@ -14,6 +14,8 @@
       { "name": "boost-type-index", "version>=": "1.81.0" },
       { "name": "boost-json", "version>=": "1.81.0" },
       { "name": "boost-url", "version>=": "1.81.0" },
+      { "name": "boost-callable-traits", "version>=": "1.81.0" },
+      { "name": "boost-beast", "version>=": "1.81.0" },
       { "name": "openssl" },
       { "name": "protobuf" }
   ],
