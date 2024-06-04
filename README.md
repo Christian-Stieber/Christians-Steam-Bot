@@ -20,10 +20,25 @@ Just run something like `cmake -S . -B build/Debug -D CMAKE_BUILD_TYPE=Debug` to
 
 ## Windows
 
-This is designed for Visual Studio 2022 Community Edition, with activated `vcpkg` support.
-If `vcpkg` has not been integrated into your VS installation yet, open a Visual Studio Command Prompt and run `vcpkg integrate install`.
+### Visual Studio 2022 Community Edition
 
-With this, just open the main folder. Visual Studio should see the `CMakeLists.txt` there and use it automatically. It will also download and build the required dependecies.
+This is designed for Visual Studio 2022 Community Edition, with suitable features installed ("Tools" menu, "Get Tools and Features..."). I'm not listing all the optional packages that I'm seeing on each workload, just the ones that I think might not be selected by default.
+
+* Workloads
+  * Desktop development with C++
+    * C++ CMake tools for Windows
+    * vcpkg package manager
+  * Windows application development
+
+In addition, you need to activate the `vcpkg` integration with Visual Studio. Open a "Visual Studio Command Prompt" from the "Tools" menu, and run `vcpkg integrate install`.
+
+With everything set up correctly, when you start Visual Studio, select "Open a local folder" to open the top level folder. Visual Studio should detect the `CMakeLists.txt` and start creating the build system automatically, as well as download and compile Boost, OpenSSL and ProtoBuf. This may take a while, but these things are cached. You can also trigger the build system generation manually from the "Project" menu.
+
+With the build system in place, just "Build all" from the "Build" menu. The executable will be `out\build\windows-x64-debug\ChristiansSteamBot.exe`.
+
+### Visual Studio Code, MSYS2 etc.
+
+None of these are supported; you're on your own.
 
 # Usage
 
