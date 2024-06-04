@@ -2,7 +2,7 @@ name: Build Linux
 on: [workflow_dispatch]
 jobs:
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - run: sudo apt-get update
       - run: sudo apt-get install -y libboost-all-dev
