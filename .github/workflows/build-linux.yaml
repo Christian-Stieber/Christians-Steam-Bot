@@ -6,7 +6,6 @@ jobs:
     steps:
       - run: sudo apt-get update
       - run: sudo apt-get install -y libboost-all-dev
-      - run: sudo apt-get install -y libssl-dev
       - run: sudo apt-get install -y libprotobuf-dev protobuf-compiler
       - run: sudo apt-get install -y libsystemd-dev libzstd-dev libbz2-dev liblzma-dev
       # https://github.com/actions/checkout
