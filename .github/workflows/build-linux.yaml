@@ -1,0 +1,23 @@
+name: Build Linux
+on: [workflow_dispatch]
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y libboost-all-dev
+      - run: sudo apt-get install -y libssl-dev
+      - run: sudo apt-get install -y libprotobuf-dev protobuf-compiler
+      - run: sudo apt-get install -y libsystemd-dev libzstd-dev libbz2-dev liblzma-dev
+      # https://github.com/actions/checkout
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - run: cmake -S . -B build/Debug -D CMAKE_BUILD_TYPE=Debug
+      - run: cmake --build build/Debug
+      # https://github.com/actions/upload-artifact
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChristiansSteamBot-Linux
+          path: build/Debug/ChristiansSteamBot
+          overwrite: true
