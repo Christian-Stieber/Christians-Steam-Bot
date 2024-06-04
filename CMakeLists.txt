@@ -18,6 +18,10 @@ project(ChristiansSteamBot
   VERSION 0.0.1)
 add_executable(${PROJECT_NAME})
 
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  target_link_options(${PROJECT_NAME} PRIVATE "-static-libstdc++" "-static-libgcc")
+endif()
+
 ######################################################################
 
 add_subdirectory(Christians-Steam-Framework)
