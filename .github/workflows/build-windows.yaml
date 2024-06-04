@@ -5,7 +5,7 @@ jobs:
     runs-on: windows-2022
     steps:
       # https://stackoverflow.com/questions/5879076/how-to-create-a-batch-file-for-visual-studio-command-prompt
-      - run: call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x86_amd64
+      - run: "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x86_amd64
       # https://github.com/actions/checkout
       - uses: actions/checkout@v4
         with:
