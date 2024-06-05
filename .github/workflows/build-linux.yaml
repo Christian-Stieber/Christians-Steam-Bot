@@ -19,10 +19,13 @@ jobs:
         run: |
           cmake -S . -B build/Debug -D CMAKE_BUILD_TYPE=Debug
           cmake --build build/Debug
+          cpack -G DEB --config build/Debug/CPackConfig.cmake
+          mkdir Linux
+          mv christianssteambot*.deb Linux/
       # https://github.com/actions/upload-artifact
       - name: upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ChristiansSteamBot-Linux
-          path: build/Debug/ChristiansSteamBot
+          name: Linux-x64
+          path: Linux
           overwrite: true
