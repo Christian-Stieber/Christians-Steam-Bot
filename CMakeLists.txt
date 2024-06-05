@@ -63,7 +63,13 @@ addSource("UI/Console/CLI/Commands"
 
 ######################################################################
 
-install(TARGETS ${PROJECT_NAME})
+if(WIN32)
+  install(TARGETS ${PROJECT_NAME} DESTINATION ".")
+else()
+  install(TARGETS ${PROJECT_NAME})
+endif()
+
+set(CPACK_PACKAGE_EXECUTABLES "${PROJECT_NAME};Christians Steam Bot")
 
 ######################################################################
 
