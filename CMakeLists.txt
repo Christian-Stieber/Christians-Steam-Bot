@@ -12,10 +12,20 @@ cmake_minimum_required(VERSION 3.25)
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
+if(DEFINED ENV{CHRISTIAN_VERSION})
+  set(CHRISTIAN_VERSION "$ENV{CHRISTIAN_VERSION}")
+else()
+  set(CHRISTIAN_VERSION "0.0.0")
+endif()
+
+message(${CHRISTIAN_VERSION})
+
 project(ChristiansSteamBot
   LANGUAGES CXX
   HOMEPAGE_URL "https://github.com/Christian-Stieber/Christians-Steam-Bot"
-  VERSION 0.0.1)
+  VERSION ${CHRISTIAN_VERSION}
+)
+
 add_executable(${PROJECT_NAME})
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
