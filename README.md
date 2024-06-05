@@ -36,6 +36,8 @@ With everything set up correctly, when you start Visual Studio, select "Open a l
 
 With the build system in place, just "Build all" from the "Build" menu. The executable will be `out\build\windows-x64-debug\ChristiansSteamBot.exe`.
 
+For a command line build, refer to [`.github/workflows/build-windows.yaml`](https://github.com/Christian-Stieber/Christians-Steam-Bot/.github/workflows/build-windows.yaml).
+
 ### Visual Studio Code, MSYS2 etc.
 
 None of these are supported; you're on your own.
