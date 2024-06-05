@@ -38,6 +38,8 @@ With the build system in place, just "Build all" from the "Build" menu. The exec
 
 For a command line build, refer to [`.github/workflows/build-windows.yaml`](https://github.com/Christian-Stieber/Christians-Steam-Bot/blob/main/.github/workflows/build-windows.yaml).
 
+In order for CPack to work, you'll need to install the [WiX v3 toolset](https://github.com/wixtoolset/wix3/releases/) and the [Visual Studio 2022 Extension](https://marketplace.visualstudio.com/items?itemName=WixToolset.WixToolsetVisualStudio2022Extension)
+
 ### Visual Studio Code, MSYS2 etc.
 
 None of these are supported; you're on your own.
