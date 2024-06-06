@@ -11,18 +11,18 @@ jobs:
     permissions:
       contents: write
     steps:
-      - run: mkdir "Release"
+      - run: mkdir Release
       # https://github.com/actions/download-artifact
       - uses: actions/download-artifact@v4
         with:
           path: Release
           merge-multiple: true
-      - run: ls -l "Release"
+      - run: ls -l Release
       # https://github.com/ncipollo/release-action
       - uses: ncipollo/release-action@v1
         with:
           artifactErrorsFailBuild: true
-          artifacts: "Release"
+          artifacts: Release/*
           body: "Auto-generated release"
           makeLatest: true
           tag: test-release
