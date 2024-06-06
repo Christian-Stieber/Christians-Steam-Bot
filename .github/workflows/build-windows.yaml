@@ -1,8 +1,29 @@
 name: Build Windows
-on: [workflow_dispatch]
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "The version number"
+        type: string
+
+  workflow_call:
+    inputs:
+      version:
+        description: "The version number"
+        type: string
+    outputs:
+      artifact:
+        description: "The artifact that was built"
+        value: ${{ jobs.build-windows.outputs.artifact }}
+
 jobs:
   build-windows:
     runs-on: windows-2022
+    env:
+      CHRISTIAN_VERSION: ${{ inputs.version }}
+    outputs:
+      artifact: ${{ steps.uploaded.outputs.artifact }}
     steps:
       # https://github.com/actions/checkout
       - name: checkout source
@@ -27,3 +48,6 @@ jobs:
           name: Windows
           path: Windows
           overwrite: true
+      - name: produce outputs
+        id: uploaded
+        run: echo "artifact=Windows" >> $GITHUB_OUTPUT

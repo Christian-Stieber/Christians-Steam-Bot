@@ -1,7 +1,17 @@
 name: Build Linux
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "The version number"
+        type: string
+
   workflow_call:
+    inputs:
+      version:
+        description: "The version number"
+        type: string
     outputs:
       artifact:
         description: "The artifact that was built"
@@ -10,6 +20,8 @@ on:
 jobs:
   build-linux:
     runs-on: ubuntu-24.04
+    env:
+      CHRISTIAN_VERSION: ${{ inputs.version }}
     outputs:
       artifact: ${{ steps.uploaded.outputs.artifact }}
     steps:
@@ -26,7 +38,6 @@ jobs:
           submodules: 'recursive'
       - name: build
         run: |
-          export CHRISTIAN_VERSION="${{github.ref_name}}"
           cmake -S . -B build/Debug -D CMAKE_BUILD_TYPE=Debug
           cmake --build build/Debug
           cpack -G DEB --config build/Debug/CPackConfig.cmake
