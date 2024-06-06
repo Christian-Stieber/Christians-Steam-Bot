@@ -1,4 +1,4 @@
-name: Build a dummy
+name: Build a dummy package
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
         value: ${{ jobs.build-dummy.outputs.artifact }}
 
 jobs:
-  build-linux:
+  build-dummy:
     runs-on: ubuntu-24.04
     outputs:
       artifact: ${{ steps.uploaded.outputs.artifact }}
@@ -24,7 +24,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Dummy
-          path: Linux
+          path: Dummy
           overwrite: true
       - name: produce outputs
         id: uploaded
