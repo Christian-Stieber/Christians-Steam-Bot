@@ -6,8 +6,8 @@ on:
       - 'release/[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
-  build-dummy:
-    uses: ./.github/workflows/build-dummy.yaml
+  build-linux:
+    uses: ./.github/workflows/build-linux.yaml
 
   release:
     name: make release
