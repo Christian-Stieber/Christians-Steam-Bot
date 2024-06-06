@@ -1,4 +1,4 @@
-name: make release
+name: Make a release
 on: [workflow_dispatch]
 jobs:
   build-dummy:
@@ -9,8 +9,16 @@ jobs:
     needs: [ build-dummy ]
     runs-on: ubuntu-latest
     steps:
+      - run: mkdir "Release"
       # https://github.com/actions/download-artifact
       - uses: actions/download-artifact@v4
         with:
+          path: Release
           merge-multiple: true
-      - run: ls --recursive "$GITHUB_WORKSPACE"
+      # https://github.com/ncipollo/release-action
+      - uses: ncipollo/release-action@v1
+        with:
+          artifactErrorsFailBuild: true
+          artifacts: "Release"
+          body: "Auto-generated release"
+          makeLatest: true
