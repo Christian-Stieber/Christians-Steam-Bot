@@ -1,0 +1,16 @@
+name: make release
+on: [workflow_dispatch]
+jobs:
+  build-dummy:
+    uses: ./.github/workflows/build-dummy.yaml
+
+  release:
+    name: make release
+    needs: [ build-dummy ]
+    runs-on: ubuntu-latest
+    steps:
+      # https://github.com/actions/download-artifact
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - run: ls --recursive "$GITHUB_WORKSPACE"

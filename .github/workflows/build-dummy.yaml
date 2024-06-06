@@ -1,0 +1,31 @@
+name: Build a dummy
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    outputs:
+      artifact:
+        description: "The artifact that was built"
+        value: ${{ jobs.build-dummy.outputs.artifact }}
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+    outputs:
+      artifact: ${{ steps.uploaded.outputs.artifact }}
+    steps:
+      - name: build
+        run: |
+          mkdir Dummy
+          echo "This is just a dummy 'package' \#1 for development" > Dummy/Dummy-1.txt
+          echo "This is just a dummy 'package' \#2 for development" > Dummy/Dummy-2.txt
+      # https://github.com/actions/upload-artifact
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dummy
+          path: Linux
+          overwrite: true
+      - name: produce outputs
+        id: uploaded
+        run: echo "artifact=Dummy" >> $GITHUB_OUTPUT
