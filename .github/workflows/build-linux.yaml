@@ -1,8 +1,17 @@
 name: Build Linux
-on: [workflow_dispatch]
+
+on:
+  workflow_call:
+    outputs:
+      artifact:
+        description: "The artifact that was built"
+        value: ${{ jobs.build-linux.outputs.artifact }}
+
 jobs:
   build-linux:
     runs-on: ubuntu-24.04
+    outputs:
+      artifact: ${{ steps.uploaded.outputs.artifact }}
     steps:
       - name: install packages
         run: |
@@ -17,6 +26,7 @@ jobs:
           submodules: 'recursive'
       - name: build
         run: |
+          export CHRISTIAN_VERSION="${{github.ref_name}}"
           cmake -S . -B build/Debug -D CMAKE_BUILD_TYPE=Debug
           cmake --build build/Debug
           cpack -G DEB --config build/Debug/CPackConfig.cmake
@@ -29,3 +39,6 @@ jobs:
           name: Linux-x64
           path: Linux
           overwrite: true
+      - name: produce outputs
+        id: uploaded
+        run: echo "artifact=Linux-x64" >> $GITHUB_OUTPUT

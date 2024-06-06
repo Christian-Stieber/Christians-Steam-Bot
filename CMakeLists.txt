@@ -17,8 +17,8 @@ if(DEFINED ENV{CHRISTIAN_VERSION})
 else()
   set(CHRISTIAN_VERSION "0.0.0")
 endif()
-
-message(${CHRISTIAN_VERSION})
+string(REPLACE "release/" "" CHRISTIAN_VERSION "{CHRISTIAN_VERSION}")
+message("Version: ${CHRISTIAN_VERSION}")
 
 project(ChristiansSteamBot
   LANGUAGES CXX

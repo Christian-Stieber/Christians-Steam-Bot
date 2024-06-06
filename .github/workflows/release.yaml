@@ -11,7 +11,7 @@ jobs:
 
   release:
     name: make release
-    needs: [ build-dummy ]
+    needs: [ build-linux ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -30,4 +30,3 @@ jobs:
           artifacts: Release/*
           body: "Auto-generated release"
           makeLatest: true
-          tag: test-release
