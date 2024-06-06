@@ -17,6 +17,9 @@ set(CPACK_PACKAGE_CONTACT "Christian Stieber <stieber.chr@gmail.com>")
 
 # DEB settings
 # https://cmake.org/cmake/help/latest/cpack_gen/deb.html#cpack_gen:CPack%20DEB%20Generator
+if (CPACK_GENERATOR STREQUAL "DEB")
+  set(CPACK_PACKAGE_NAME "ChristiansSteamBot")
+endif()
 set(CPACK_DEBIAN_PACKAGE_SECTION "misc")
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
