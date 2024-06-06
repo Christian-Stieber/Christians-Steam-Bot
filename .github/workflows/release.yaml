@@ -8,6 +8,8 @@ jobs:
     name: make release
     needs: [ build-dummy ]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - run: mkdir "Release"
       # https://github.com/actions/download-artifact
