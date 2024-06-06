@@ -5,12 +5,11 @@ on:
     tags:
       - 'release/[0-9]+.[0-9]+.[0-9]+'
 
-env:
-  CHRISTIAN_VERSION: ${{github.ref_name}}
-
 jobs:
   build-dummy:
     uses: ./.github/workflows/build-dummy.yaml
+    with:
+      CHRISTIAN_VERSION: ${{github.ref_name}}
 
 #  build-linux:
 #    uses: ./.github/workflows/build-linux.yaml

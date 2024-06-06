@@ -2,7 +2,16 @@ name: Build a dummy package
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "The version number"
+        type: string
+
   workflow_call:
+    inputs:
+      version:
+        description: "The version number"
+        type: string
     outputs:
       artifact:
         description: "The artifact that was built"
@@ -10,6 +19,9 @@ on:
 
 jobs:
   build-dummy:
+    env:
+      CHRISTIAN_VERSION: ${{ inputs.version }}
+
     runs-on: ubuntu-24.04
     outputs:
       artifact: ${{ steps.uploaded.outputs.artifact }}
