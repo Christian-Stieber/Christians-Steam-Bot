@@ -38,7 +38,7 @@ jobs:
           cmake --build --preset windows-x64-debug
           cpack -G WIX --config out/build/windows-x64-debug/CPackConfig.cmake
           mkdir Windows
-          copy out\\build\\windows-x64-debug\\ChristiansSteamBot.exe Windows
+          7z a -tzip -mx=9 Windows\\ChristiansSteamBot.zip .\\out\\build\\windows-x64-debug\\ChristiansSteamBot.exe
           copy ChristiansSteamBot*.msi Windows
         shell: cmd
       # https://github.com/actions/upload-artifact
