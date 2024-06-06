@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: build
         run: |
+          export CHRISTIAN_VERSION="${{github.ref_name}}"
+          echo "$CHRISTIAN_VERSION"
           mkdir Dummy
           echo "This is just a dummy 'package' \#1 for development" > Dummy/Dummy-1.txt
           echo "This is just a dummy 'package' \#2 for development" > Dummy/Dummy-2.txt
