@@ -15,6 +15,7 @@ jobs:
         with:
           path: Release
           merge-multiple: true
+      - run: ls -l "Release"
       # https://github.com/ncipollo/release-action
       - uses: ncipollo/release-action@v1
         with:
@@ -22,3 +23,4 @@ jobs:
           artifacts: "Release"
           body: "Auto-generated release"
           makeLatest: true
+          tag: test-release
