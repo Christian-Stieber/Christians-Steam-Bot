@@ -162,6 +162,36 @@ namespace SteamBot
 }
 
 /************************************************************************/
+/*
+ * This class is for a game-matching that treats an all-numeric
+ * string as an ID.
+ */
+
+namespace SteamBot
+{
+    class OptionRegexID : public std::variant<std::monostate, std::regex, uint64_t>
+    {
+    public:
+        bool doesMatch(const std::string&, uint64_t) const;
+
+    public:
+        OptionRegexID& operator=(uint64_t value)
+        {
+            std::variant<std::monostate, std::regex, uint64_t>::operator=(value);
+            return *this;
+        }
+
+        OptionRegexID& operator=(std::regex value)
+        {
+            std::variant<std::monostate, std::regex, uint64_t>::operator=(std::move(value));
+            return *this;
+        }
+    };
+
+    std::istream& operator>>(std::istream&, OptionRegexID&);
+}
+
+/************************************************************************/
 
 namespace SteamBot
 {

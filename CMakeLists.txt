@@ -53,6 +53,7 @@ function(addSource directory)
 endfunction(addSource)
 
 addSource("." Main Asan)
+addSource("UI" Command)
 addSource("UI/Console" Console Table Manager_Linux Manager_Windows)
 addSource("UI/Console/CLI" CLI Helpers)
 
