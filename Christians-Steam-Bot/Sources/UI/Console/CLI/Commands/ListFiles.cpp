@@ -134,8 +134,10 @@ static size_t printFiles(const SteamBot::Cloud::Files& files)
         line[Columns::Size] << SteamBot::printSize(file.fileSize);
         line[Columns::Timestamp] << SteamBot::Time::toString(file.timestamp);
         {
+            auto platforms=getStrings(file.platforms);
+
             const char* separator="";
-            for (const std::string& platform: file.platforms)
+            for (const auto& platform: platforms)
             {
                 line[Columns::Platforms] << separator << platform;
                 separator=", ";
