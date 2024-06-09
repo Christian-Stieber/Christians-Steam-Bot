@@ -85,7 +85,7 @@ namespace
                 auto options_=new boost::program_options::options_description();
                 options_->add_options()
                     ("games",
-                     boost::program_options::value<SteamBot::OptionRegex>()->value_name("regex"),
+                     boost::program_options::value<SteamBot::OptionRegexID>()->value_name("regex|appId"),
                      "games to list")
                     ("playtime",
                      boost::program_options::bool_switch(),
@@ -109,7 +109,7 @@ namespace
         class Execute : public ExecuteBase
         {
         private:
-            std::optional<SteamBot::OptionRegex> gamesRegex;
+            std::optional<SteamBot::OptionRegexID> gamesRegex;
             bool adult=false;
             bool earlyAccess=false;
             bool farmable=false;
@@ -136,7 +136,7 @@ namespace
                 sortPlaytime=options["playtime"].as<bool>();
                 if (options.count("games"))
                 {
-                    gamesRegex=options["games"].as<SteamBot::OptionRegex>();
+                    gamesRegex=options["games"].as<SteamBot::OptionRegexID>();
                 }
                 return true;
             }
@@ -284,7 +284,7 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
             if ((!adult || isAdult(info)) &&
                 (!earlyAccess || isEarlyAccess(info)) &&
                 (!farmable || isFarmable(info, gameInfo.badgeData.get())) &&
-                (!gamesRegex || std::regex_search(info.name, *gamesRegex)))
+                (!gamesRegex || gamesRegex->doesMatch(info.name, info.appId)))
             {
                 games.emplace_back(item.second);
             }

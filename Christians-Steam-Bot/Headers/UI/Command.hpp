@@ -32,6 +32,7 @@
 
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 
 #include <boost/url/url.hpp>
 
@@ -165,6 +166,13 @@ namespace SteamBot
 /*
  * This class is for a game-matching that treats an all-numeric
  * string as an ID.
+ *
+ * ToDo: yes, I' aware that the appId-matching is a bit stupid since
+ * we go through the entire game list to pick just one. We could
+ * probably just request that one piece of data initially, since many
+ * APIs have an appId-lookup already.
+ * But, for now, this was a quick addition that didn't require a lot
+ * lot of reorganizing in the command implementations.
  */
 
 namespace SteamBot
@@ -173,6 +181,11 @@ namespace SteamBot
     {
     public:
         bool doesMatch(const std::string&, uint64_t) const;
+
+        template <typename T> bool doesMatch(const std::string& name, T id) const requires(std::is_enum_v<T>)
+        {
+            return doesMatch(name, boost::numeric_cast<uint64_t>(SteamBot::toInteger(id)));
+        }
 
     public:
         OptionRegexID& operator=(uint64_t value)

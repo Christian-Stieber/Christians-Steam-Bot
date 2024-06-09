@@ -28,8 +28,6 @@
 #include "Helpers/NumberString.hpp"
 #include "EnumString.hpp"
 
-#include <boost/numeric/conversion/cast.hpp>
-
 /************************************************************************/
 
 namespace
@@ -132,7 +130,7 @@ void ListCloudCommand::Execute::filterApps(SteamBot::Cloud::Apps& apps) const
     if (gamesRegex)
     {
         SteamBot::erase(apps.apps, [this](const SteamBot::Cloud::Apps::App& app){
-            return !gamesRegex->doesMatch(app.name, boost::numeric_cast<uint64_t>(SteamBot::toInteger(app.appId)));
+            return !gamesRegex->doesMatch(app.name, app.appId);
         });
     }
 }
