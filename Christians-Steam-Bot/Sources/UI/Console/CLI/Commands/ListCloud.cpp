@@ -28,6 +28,8 @@
 #include "Helpers/NumberString.hpp"
 #include "EnumString.hpp"
 
+#include <boost/numeric/conversion/cast.hpp>
+
 /************************************************************************/
 
 namespace
@@ -68,7 +70,7 @@ namespace
                 auto options_=new boost::program_options::options_description();
                 options_->add_options()
                     ("games",
-                     boost::program_options::value<SteamBot::OptionRegex>()->value_name("regex"),
+                     boost::program_options::value<SteamBot::OptionRegexID>()->value_name("regex|appId"),
                      "games to list")
                     ("size",
                      boost::program_options::bool_switch(),
@@ -86,7 +88,7 @@ namespace
         class Execute : public ExecuteBase
         {
         private:
-            std::optional<SteamBot::OptionRegex> gamesRegex;
+            std::optional<SteamBot::OptionRegexID> gamesRegex;
             bool sortSize=false;
             bool sortCount=false;
 
@@ -106,7 +108,7 @@ namespace
                 sortCount=options["count"].as<bool>();
                 if (options.count("games"))
                 {
-                    gamesRegex=options["games"].as<SteamBot::OptionRegex>();
+                    gamesRegex=options["games"].as<SteamBot::OptionRegexID>();
                 }
                 return true;
             }
@@ -130,7 +132,7 @@ void ListCloudCommand::Execute::filterApps(SteamBot::Cloud::Apps& apps) const
     if (gamesRegex)
     {
         SteamBot::erase(apps.apps, [this](const SteamBot::Cloud::Apps::App& app){
-            return !std::regex_search(app.name, *gamesRegex);
+            return !gamesRegex->doesMatch(app.name, boost::numeric_cast<uint64_t>(SteamBot::toInteger(app.appId)));
         });
     }
 }
