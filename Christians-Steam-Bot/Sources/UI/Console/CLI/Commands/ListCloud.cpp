@@ -166,48 +166,6 @@ void ListCloudCommand::Execute::sortApps(SteamBot::Cloud::Apps& apps) const
 
 /************************************************************************/
 
-static std::string printSize(uint64_t size)
-{
-    const char* unit=nullptr;
-
-    if (size>=1024*1024)
-    {
-        size=(size*10)/(1024*1024)+5;
-        unit="MiB";
-    }
-    else if (size>=1024)
-    {
-        size=(size*10)/(1024)+5;
-        unit="KiB";
-    }
-
-    auto result=SteamBot::toString(size);
-
-    if (unit!=nullptr)
-    {
-        // do the "floating point" correction
-        assert(!result.empty());
-        const char decimal=result.back();
-        result.pop_back();
-        if (decimal!='0')
-        {
-            result+='.';
-            result+=decimal;
-        }
-    }
-    else
-    {
-        unit="bytes";
-    }
-
-    result+=' ';
-    result+=unit;
-
-    return result;
-}
-
-/************************************************************************/
-
 static void printApps(const SteamBot::Cloud::Apps& apps)
 {
     uint32_t totalCount=0;
@@ -220,13 +178,13 @@ static void printApps(const SteamBot::Cloud::Apps& apps)
         {
             std::cout << " (" << app.name << ")";
         }
-        std::cout << ": " << app.totalCount << " files with " << printSize(app.totalSize) << '\n';
+        std::cout << ": " << app.totalCount << " files with " << SteamBot::printSize(app.totalSize) << '\n';
 
         totalCount+=app.totalCount;
         totalSize+=app.totalSize;
     }
 
-    std::cout << "listed " << apps.apps.size() << " games with " << totalCount << " files using " << printSize(totalSize) << '\n';
+    std::cout << "listed " << apps.apps.size() << " games with " << totalCount << " files using " << SteamBot::printSize(totalSize) << '\n';
 }
 
 /************************************************************************/
