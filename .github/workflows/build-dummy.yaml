@@ -39,6 +39,7 @@ jobs:
           name: Dummy
           path: Dummy
           overwrite: true
+          retention-days: 1
       - name: produce outputs
         id: uploaded
         run: echo "artifact=Dummy" >> $GITHUB_OUTPUT
