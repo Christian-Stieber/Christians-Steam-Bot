@@ -62,6 +62,8 @@ namespace SteamBot
         class CommandBase
         {
         public:
+            virtual ~CommandBase() =default;
+
             virtual bool global() const =0;
             virtual const std::string_view& command() const =0;
 
