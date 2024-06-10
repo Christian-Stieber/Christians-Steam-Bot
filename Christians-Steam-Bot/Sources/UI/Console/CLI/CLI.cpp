@@ -380,7 +380,7 @@ void CLI::run()
         {
             if (currentAccount!=nullptr)
             {
-                std::cout << "[" << currentAccount->accountName << "] ";
+                std::cout << "[" << currentAccount->displayName() << "] ";
             }
             std::cout << "command> " << std::flush;
             std::string line;
