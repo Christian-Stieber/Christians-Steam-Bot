@@ -232,6 +232,7 @@ void CLI::printHelp(const std::string* theCommand)
  * Returns a list of account names to use.
  *
  * Expands things like @groupname or *, or just copies the name.
+ * Supports display names as well.
  */
 
 static std::vector<SteamBot::ClientInfo*> expandAccountName(std::string_view name)
@@ -266,7 +267,11 @@ static std::vector<SteamBot::ClientInfo*> expandAccountName(std::string_view nam
         }
         else
         {
-            std::cout << "unknown account \"" << name << "\"" << std::endl;
+            result=SteamBot::ClientInfo::findDisplay(name);
+            if (result.empty())
+            {
+                std::cout << "unknown account \"" << name << "\"" << std::endl;
+            }
         }
     }
 
@@ -277,6 +282,10 @@ static std::vector<SteamBot::ClientInfo*> expandAccountName(std::string_view nam
 /*
  * Note: commands can be prefixed with "<accountname>:" as the first
  * word (even if it doesn't make sense, like "account: help").
+ *
+ * Also note that you can use display names. we will first search for
+ * an account name, and if none is found we'll search for a display
+ * name.
  */
 
 void CLI::command(const std::string& line)
