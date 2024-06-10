@@ -3,12 +3,13 @@
 This is a simple project using my Steam-Framework.
 
 Basically, a console-only bot that makes most of the current Framework available:
-* handling sale events (discovery queue and stickers)
-* "playing" games -- no automated farming yet
+* handling events (sale discovery queue, sale stickers, "viewing" streams)
 * sending inventories to another bot account
 * accepting/cancelling trades
-* some account information
-* card farming
+* automated card farming
+* manually "playing" games
+* some information about purchased games
+* some Steam-cloud information
 
 # Building
 
