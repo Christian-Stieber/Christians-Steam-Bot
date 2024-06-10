@@ -22,7 +22,7 @@
 /************************************************************************/
 
 #include "Startup.hpp"
-#include "Client/Client.hpp"
+#include "Client/ClientInfo.hpp"
 
 #include <string_view>
 #include <memory>

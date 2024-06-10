@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "Client/Client.hpp"
+#include "Client/ClientInfo.hpp"
 #include "Modules/BadgeData.hpp"
 
 #include "../Console.hpp"
