@@ -32,6 +32,11 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
   target_link_options(${PROJECT_NAME} PRIVATE "-static-libstdc++" "-static-libgcc")
 endif()
 
+if (MSVC)
+  target_link_options(${PROJECT_NAME} PRIVATE "/SUBSYSTEM:CONSOLE,6.1")
+endif()
+
+
 ######################################################################
 
 add_subdirectory(Christians-Steam-Framework)
