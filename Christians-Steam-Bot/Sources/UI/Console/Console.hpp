@@ -24,6 +24,8 @@
 #include "Modules/OwnedGames.hpp"
 #include "Modules/LicenseList.hpp"
 
+#include "./GetLine.hpp"
+
 #include <iostream>
 
 /************************************************************************/
@@ -49,6 +51,7 @@ namespace SteamBot
             class Manager;
 
         private:
+            std::unique_ptr<GetLine> getLine;
             std::unique_ptr<ManagerBase> manager;
             std::unique_ptr<CLI> cli;
 
@@ -62,6 +65,9 @@ namespace SteamBot
         private:
             virtual void outputText(ClientInfo&, std::string) override;
             virtual void requestPassword(ClientInfo&, ResultParam<std::string>, PasswordType, bool(*)(const std::string&)) override;
+
+        private:
+            virtual void quit() override;
         };
     }
 }
@@ -82,8 +88,6 @@ namespace SteamBot
  *
  * - manage the "terminal mode"
  * - watch for the "command key"
- *
- * Note: this is only implemented for Linux right now.
  */
 
 class SteamBot::UI::ConsoleUI::ManagerBase

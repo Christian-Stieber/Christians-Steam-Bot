@@ -49,7 +49,8 @@ namespace SteamBot
 /************************************************************************/
 
 ConsoleUI::ConsoleUI()
-    : manager(ManagerBase::create(*this))
+    : getLine(std::make_unique<GetLine>()),
+      manager(ManagerBase::create(*this))
 {
     manager->setMode(ManagerBase::Mode::NoInput);
 }
@@ -57,6 +58,13 @@ ConsoleUI::ConsoleUI()
 /************************************************************************/
 
 ConsoleUI::~ConsoleUI() =default;
+
+/************************************************************************/
+
+void ConsoleUI::quit()
+{
+    getLine->cancel();
+}
 
 /************************************************************************/
 

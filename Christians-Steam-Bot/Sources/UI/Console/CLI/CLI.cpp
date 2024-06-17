@@ -20,6 +20,7 @@
 #include "UI/Command.hpp"
 #include "./Helpers.hpp"
 #include "Vector.hpp"
+#include "Exceptions.hpp"
 
 #include <map>
 #include <limits>
@@ -387,18 +388,25 @@ void CLI::run()
         std::cout << "End it by entering an empty line." << std::endl;
         while (!quit)
         {
-            if (currentAccount!=nullptr)
+            try
             {
-                std::cout << "[" << currentAccount->displayName() << "] ";
+                if (currentAccount!=nullptr)
+                {
+                    std::cout << "[" << currentAccount->displayName() << "] ";
+                }
+                std::cout << "command> " << std::flush;
+                std::string line;
+                ui.getLine->get(line);
+                if (line.empty())
+                {
+                    break;
+                }
+                command(line);
             }
-            std::cout << "command> " << std::flush;
-            std::string line;
-            std::getline(std::cin, line);
-            if (line.empty())
+            catch(const SteamBot::OperationCancelledException&)
             {
                 break;
             }
-            command(line);
         }
         std::cout << "Command line mode ended." << std::endl;
     }

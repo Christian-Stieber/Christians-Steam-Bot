@@ -59,7 +59,7 @@ endfunction(addSource)
 
 addSource("." Main Asan)
 addSource("UI" Command)
-addSource("UI/Console" Console Table Manager_Linux Manager_Windows)
+addSource("UI/Console" Console Table Manager_Linux Manager_Windows GetLine_Linux)
 addSource("UI/Console/CLI" CLI Helpers)
 
 addSource("UI/Console/CLI/Commands"
