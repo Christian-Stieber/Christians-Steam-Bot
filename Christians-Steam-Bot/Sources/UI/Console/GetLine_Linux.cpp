@@ -86,21 +86,41 @@ std::istream& GetLine::get(std::string& result)
     assert(pollFds[1].fd==0);
     pollFds[1].events=POLLIN;
 
-    const auto n=poll(pollFds.data(), pollFds.size(), -1);
-    assert(n!=0);
-    if (n<0)
+    while (true)
     {
-        int Errno=errno;
-        throw std::system_error(Errno, std::generic_category());
-    }
+        const auto n=poll(pollFds.data(), pollFds.size(), -1);
+        assert(n!=0);
+        if (n<0)
+        {
+            int Errno=errno;
+            throw std::system_error(Errno, std::generic_category());
+        }
 
-    if (cancelled.test())
-    {
-        BOOST_LOG_TRIVIAL(info) << "getLine cancelled";
-        throw SteamBot::OperationCancelledException();
-    }
+        if ((pollFds[0].revents | pollFds[1].revents) & (POLLERR | POLLHUP | POLLNVAL))
+        {
+            // Not sure what to do if that happens
+            assert(false);
+        }
 
-    return std::getline(std::cin, result);
+        if (pollFds[0].revents & POLLIN)
+        {
+            uint64_t value;
+            int rc=eventfd_read(event, &value);
+            assert(rc==0);
+        }
+
+        if (cancelled.test())
+        {
+            BOOST_LOG_TRIVIAL(info) << "getLine cancelled";
+            cancelled.clear();
+            throw SteamBot::OperationCancelledException();
+        }
+
+        if (pollFds[1].revents & POLLIN)
+        {
+            return std::getline(std::cin, result);
+        }
+    }
 }
 
 /************************************************************************/

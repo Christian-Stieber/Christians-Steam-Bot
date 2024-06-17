@@ -19,6 +19,8 @@
 
 #include "./Console.hpp"
 #include "Helpers/Time.hpp"
+#include "Helpers/Destruct.hpp"
+#include "Exceptions.hpp"
 
 #include <time.h>
 
@@ -114,7 +116,18 @@ void ConsoleUI::requestPassword(ClientInfo& clientInfo, ResultParam<std::string>
         do
         {
             std::cout << clientInfo << "Please enter " << passwordTypeString << ": " << std::flush;
-            std::getline(std::cin, entered);
+
+            SteamBot::ExecuteOnDestruct destructor([&result]() { result->clearCancel(); });
+            result->setCancel([this]() { getLine->cancel(); });
+            try
+            {
+                getLine->get(entered);
+            }
+            catch(const SteamBot::OperationCancelledException&)
+            {
+                entered.clear();
+                break;
+            }
         }
         while (!(*validator)(entered));
 
