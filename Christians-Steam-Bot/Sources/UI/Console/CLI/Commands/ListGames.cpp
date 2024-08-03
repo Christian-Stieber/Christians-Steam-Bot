@@ -417,7 +417,7 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
               << totals.complimentary << " have payment-type \"Complimentary\" and "
               << totals.activationCode << " have \"ActivationCode\"\n";
     std::cout << "out of the " << totals.licenses << " licenses, "
-              << totals.noCost << " have billing tyoe \"NoCost\" and "
+              << totals.noCost << " have billing type \"NoCost\" and "
               << totals.freeOnDemand << " have \"FreeOnDemand\"\n";
 }
 
