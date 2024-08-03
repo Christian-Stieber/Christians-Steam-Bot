@@ -30,6 +30,7 @@
 #include "Modules/PackageInfo.hpp"
 #include "EnumString.hpp"
 #include "AppInfo.hpp"
+#include "Steam/BillingType.hpp"
 
 #include "steamdatabase/protobufs/steam/enums_productinfo.pb.h"
 
@@ -270,7 +271,7 @@ bool ListGamesCommand::Execute::isFarmable(const OwnedGames::GameInfo& info, con
     return false;
 }
 
-/************************************************************************/
+/*******************a*****************************************************/
 
 void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo, const CLI::Helpers::GameInfo& gameInfo) const
 {
@@ -304,8 +305,13 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
     struct
     {
         std::chrono::minutes playtime{0};
+        unsigned int licenses=0;
         unsigned int earlyAccess=0;
         unsigned int adult=0;
+        unsigned int complimentary=0;
+        unsigned int activationCode=0;
+        unsigned int noCost=0;
+        unsigned int freeOnDemand=0;
     } totals;
 
     for (const auto& game : games)
@@ -346,14 +352,45 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
         auto licenses=CLI::Helpers::getLicenseInfo(clientInfo, game->appId);
         for (auto& license : licenses)
         {
+            totals.licenses++;
+
             std::cout << "\n          ";
             ::print(*license);
+
+            switch(license->paymentMethod)
+            {
+            case SteamBot::PaymentMethod::Complimentary:
+                totals.complimentary++;
+                break;
+
+            case SteamBot::PaymentMethod::ActivationCode:
+                totals.activationCode++;
+                break;
+
+            default:
+                break;
+            }
+
+            if (auto packageInfo=SteamBot::Modules::PackageData::getPackageInfo(*license))
+            {
+                auto billingType=SteamBot::getBillingType(*packageInfo);
+                switch(billingType)
+                {
+                case SteamBot::BillingType::FreeOnDemand:
+                    totals.freeOnDemand++;
+                    break;
+
+                case SteamBot::BillingType::NoCost:
+                    totals.noCost++;
+                    break;
+
+                default:
+                    break;
+                }
+            }
         }
 
-        if (adult)
-        {
-            printAdult(*game);
-        }
+        printAdult(*game);
 
         if (gameInfo.badgeData)
         {
@@ -372,9 +409,16 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
         std::cout << "\n";
     }
 
-    std::cout << "listed " << games.size() << " games (" << totals.adult << " adult, "
+    std::cout << "listed " << games.size() << " games ("
+              << totals.adult << " adult, "
               << totals.earlyAccess << " early access) with a total playtime of "
               << SteamBot::Time::toString(totals.playtime) << "\n";
+    std::cout << "out of the " << totals.licenses << " licenses, "
+              << totals.complimentary << " have payment-type \"Complimentary\" and "
+              << totals.activationCode << " have \"ActivationCode\"\n";
+    std::cout << "out of the " << totals.licenses << " licenses, "
+              << totals.noCost << " have billing tyoe \"NoCost\" and "
+              << totals.freeOnDemand << " have \"FreeOnDemand\"\n";
 }
 
 /************************************************************************/
