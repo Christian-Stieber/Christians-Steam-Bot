@@ -271,7 +271,27 @@ bool ListGamesCommand::Execute::isFarmable(const OwnedGames::GameInfo& info, con
     return false;
 }
 
-/*******************a*****************************************************/
+/************************************************************************/
+
+struct Totals
+{
+    std::chrono::minutes playtime{0};
+    unsigned int earlyAccess=0;
+    unsigned int adult=0;
+};
+
+/************************************************************************/
+
+static void printLicenses(const std::vector<std::shared_ptr<const CLI::Helpers::LicenseInfo>>& licenses, const char* moreIndent)
+{
+    for (auto& license : licenses)
+    {
+        std::cout << "\n          " << moreIndent;
+        ::print(*license);
+    }
+}
+
+/************************************************************************/
 
 void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo, const CLI::Helpers::GameInfo& gameInfo) const
 {
@@ -302,17 +322,7 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
         return SteamBot::caseInsensitiveStringCompare_less(left->name, right->name);
     });
 
-    struct
-    {
-        std::chrono::minutes playtime{0};
-        unsigned int licenses=0;
-        unsigned int earlyAccess=0;
-        unsigned int adult=0;
-        unsigned int complimentary=0;
-        unsigned int activationCode=0;
-        unsigned int noCost=0;
-        unsigned int freeOnDemand=0;
-    } totals;
+    Totals totals;
 
     for (const auto& game : games)
     {
@@ -349,43 +359,18 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
             totals.playtime+=game->playtimeForever;
         }
 
-        auto licenses=CLI::Helpers::getLicenseInfo(clientInfo, game->appId);
-        for (auto& license : licenses)
         {
-            totals.licenses++;
+            auto licenses=CLI::Helpers::getLicenseInfo(clientInfo, game->appId);
+            printLicenses(licenses, "");
 
-            std::cout << "\n          ";
-            ::print(*license);
-
-            switch(license->paymentMethod)
+            auto DLCs=SteamBot::AppInfo::getDLCs(game->appId);
+            for (auto appId: DLCs)
             {
-            case SteamBot::PaymentMethod::Complimentary:
-                totals.complimentary++;
-                break;
-
-            case SteamBot::PaymentMethod::ActivationCode:
-                totals.activationCode++;
-                break;
-
-            default:
-                break;
-            }
-
-            if (auto packageInfo=SteamBot::Modules::PackageData::getPackageInfo(*license))
-            {
-                auto billingType=SteamBot::getBillingType(*packageInfo);
-                switch(billingType)
+                licenses=CLI::Helpers::getLicenseInfo(clientInfo, appId);
+                if (!licenses.empty())
                 {
-                case SteamBot::BillingType::FreeOnDemand:
-                    totals.freeOnDemand++;
-                    break;
-
-                case SteamBot::BillingType::NoCost:
-                    totals.noCost++;
-                    break;
-
-                default:
-                    break;
+                    std::cout << "\n          (DLC) " << appId;
+                    printLicenses(licenses, "   ");
                 }
             }
         }
@@ -413,12 +398,6 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
               << totals.adult << " adult, "
               << totals.earlyAccess << " early access) with a total playtime of "
               << SteamBot::Time::toString(totals.playtime) << "\n";
-    std::cout << "out of the " << totals.licenses << " licenses, "
-              << totals.complimentary << " have payment-type \"Complimentary\" and "
-              << totals.activationCode << " have \"ActivationCode\"\n";
-    std::cout << "out of the " << totals.licenses << " licenses, "
-              << totals.noCost << " have billing type \"NoCost\" and "
-              << totals.freeOnDemand << " have \"FreeOnDemand\"\n";
 }
 
 /************************************************************************/
