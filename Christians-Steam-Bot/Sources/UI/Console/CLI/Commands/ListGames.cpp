@@ -30,7 +30,6 @@
 #include "Modules/PackageInfo.hpp"
 #include "EnumString.hpp"
 #include "AppInfo.hpp"
-#include "Steam/BillingType.hpp"
 
 #include "steamdatabase/protobufs/steam/enums_productinfo.pb.h"
 
@@ -156,27 +155,6 @@ namespace
 
 /************************************************************************/
 
-static void print(const SteamBot::Modules::LicenseList::Whiteboard::Licenses::LicenseInfo& license)
-{
-    auto packageIdValue=static_cast<std::underlying_type_t<decltype(license.packageId)>>(license.packageId);
-    std::cout << "pkg " << packageIdValue;
-    if (auto info=SteamBot::Modules::PackageInfo::Info::get(license.packageId))
-    {
-        if (!info->packageName.empty())
-        {
-            std::cout << " (" << info->packageName << ")";
-        }
-    }
-    std::cout << " purchased " << SteamBot::Time::toString(license.timeCreated, false);
-    // std::cout << " (" << SteamBot::enumToStringAlways(license.licenseType) << ")";
-    if (license.paymentMethod!=SteamBot::PaymentMethod::None)
-    {
-        std::cout << " (" << SteamBot::enumToStringAlways(license.paymentMethod) << ")";
-    }
-}
-
-/************************************************************************/
-
 bool ListGamesCommand::Execute::isEarlyAccess(const OwnedGames::GameInfo& info) const
 {
     if (auto json=SteamBot::AppInfo::get(info.appId, "common", "genres"))
@@ -282,17 +260,6 @@ struct Totals
 
 /************************************************************************/
 
-static void printLicenses(const std::vector<std::shared_ptr<const CLI::Helpers::LicenseInfo>>& licenses, const char* moreIndent)
-{
-    for (auto& license : licenses)
-    {
-        std::cout << "\n          " << moreIndent;
-        ::print(*license);
-    }
-}
-
-/************************************************************************/
-
 void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo, const CLI::Helpers::GameInfo& gameInfo) const
 {
     typedef std::shared_ptr<const OwnedGames::GameInfo> ItemType;
@@ -360,17 +327,13 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
         }
 
         {
-            auto licenses=CLI::Helpers::getLicenseInfo(clientInfo, game->appId);
-            printLicenses(licenses, "");
-
             auto DLCs=SteamBot::AppInfo::getDLCs(game->appId);
             for (auto appId: DLCs)
             {
-                licenses=CLI::Helpers::getLicenseInfo(clientInfo, appId);
+                auto licenses=CLI::Helpers::getLicenseInfo(clientInfo, appId);
                 if (!licenses.empty())
                 {
                     std::cout << "\n          (DLC) " << appId;
-                    printLicenses(licenses, "   ");
                 }
             }
         }
