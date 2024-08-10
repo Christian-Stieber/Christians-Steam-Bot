@@ -27,6 +27,7 @@
 #include "AppInfo.hpp"
 #include "EnumString.hpp"
 #include "Steam/AppType.hpp"
+#include "Steam/BillingType.hpp"
 
 /************************************************************************/
 
@@ -197,16 +198,29 @@ void Info::printLicense(SteamBot::PackageID packageId)
         if (iterator->second)
         {
             const LicenseInfo& license=(*iterator->second);
+            const auto package=SteamBot::Modules::PackageData::getPackageInfo(license);
 
-            std::cout << "   package " << license.packageId
-                      << " purchased " << SteamBot::Time::toString(license.timeCreated, false);
-            if (license.paymentMethod!=SteamBot::PaymentMethod::None)
+            std::cout << "   package " << license.packageId;
+
+            if (package)
+            {
+                auto billingType=SteamBot::getBillingType(*package);
+                if (billingType!=decltype(billingType)::Unknown)
+                {
+                    std::cout << " (" << SteamBot::enumToStringAlways(billingType) << ')';
+                }
+            }
+
+            std::cout << " purchased " << SteamBot::Time::toString(license.timeCreated, false);
+
+            if (license.paymentMethod!=decltype(license.paymentMethod)::None)
             {
                 std::cout << " (" << SteamBot::enumToStringAlways(license.paymentMethod) << ')';
             }
+
             std::cout << '\n';
 
-            if (auto package=SteamBot::Modules::PackageData::getPackageInfo(license))
+            if (package)
             {
                 for (const SteamBot::AppID appId: package->appIds)
                 {
