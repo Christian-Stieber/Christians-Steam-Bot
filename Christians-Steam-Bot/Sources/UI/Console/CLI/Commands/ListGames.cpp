@@ -90,6 +90,12 @@ namespace
                     ("playtime",
                      boost::program_options::bool_switch(),
                      "sort by playtime")
+                    ("last-played",
+                     boost::program_options::bool_switch(),
+                     "sort by last played")
+                    ("no-dlc",
+                     boost::program_options::bool_switch(),
+                     "don't list DLCs")
                     ("adult",
                      boost::program_options::bool_switch(),
                      "only list adult games")
@@ -114,6 +120,8 @@ namespace
             bool earlyAccess=false;
             bool farmable=false;
             bool sortPlaytime=false;
+            bool sortLastPlayed=false;
+            bool noDLC=false;
 
         public:
             using ExecuteBase::ExecuteBase;
@@ -130,10 +138,12 @@ namespace
         public:
             virtual bool init(const boost::program_options::variables_map& options) override
             {
+                noDLC=options["no-dlc"].as<bool>();
                 adult=options["adult"].as<bool>();
                 earlyAccess=options["early-access"].as<bool>();
                 farmable=options["farmable"].as<bool>();
                 sortPlaytime=options["playtime"].as<bool>();
+                sortLastPlayed=options["last-played"].as<bool>();
                 if (options.count("games"))
                 {
                     gamesRegex=options["games"].as<SteamBot::OptionRegexID>();
@@ -286,6 +296,12 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
             if (compare==std::strong_ordering::less) return true;
             if (compare==std::strong_ordering::greater) return false;
         }
+        else if (sortLastPlayed)
+        {
+            auto compare=(left->lastPlayed<=>right->lastPlayed);
+            if (compare==std::strong_ordering::less) return true;
+            if (compare==std::strong_ordering::greater) return false;
+        }
         return SteamBot::caseInsensitiveStringCompare_less(left->name, right->name);
     });
 
@@ -326,6 +342,7 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
             totals.playtime+=game->playtimeForever;
         }
 
+        if (!noDLC)
         {
             auto DLCs=SteamBot::AppInfo::getDLCs(game->appId);
             for (auto appId: DLCs)
