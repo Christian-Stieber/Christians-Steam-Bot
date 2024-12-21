@@ -266,6 +266,7 @@ struct Totals
     std::chrono::minutes playtime{0};
     unsigned int earlyAccess=0;
     unsigned int adult=0;
+    unsigned int DLC=0;
 };
 
 /************************************************************************/
@@ -342,7 +343,6 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
             totals.playtime+=game->playtimeForever;
         }
 
-        if (!noDLC)
         {
             auto DLCs=SteamBot::AppInfo::getDLCs(game->appId);
             for (auto appId: DLCs)
@@ -350,7 +350,11 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
                 auto licenses=CLI::Helpers::getLicenseInfo(clientInfo, appId);
                 if (!licenses.empty())
                 {
-                    std::cout << "\n          (DLC) " << appId;
+                    if (!noDLC)
+                    {
+                        std::cout << "\n          (DLC) " << appId;
+                    }
+                    totals.DLC++;
                 }
             }
         }
@@ -376,7 +380,8 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
 
     std::cout << "listed " << games.size() << " games ("
               << totals.adult << " adult, "
-              << totals.earlyAccess << " early access) with a total playtime of "
+              << totals.earlyAccess << " early access) and "
+              << totals.DLC << " DLCs, with a total playtime of "
               << SteamBot::Time::toString(totals.playtime) << "\n";
 }
 
