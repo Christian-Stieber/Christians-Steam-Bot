@@ -20,6 +20,7 @@
 #include "UI/CLI.hpp"
 #include "UI/Command.hpp"
 
+#include "EnumString.hpp"
 #include "Modules/LicenseList.hpp"
 #include "Modules/Executor.hpp"
 
@@ -101,7 +102,7 @@ private:
     struct
     {
         uint32_t f2p=0;
-        uint32_t giveaway=0;
+        uint32_t promotional=0;
         uint32_t regular=0;
         uint32_t other=0;
     } license;
@@ -109,6 +110,7 @@ private:
     Licenses::Ptr licenses;
 
     void getWhiteboardData(std::shared_ptr<SteamBot::Client>);
+    void printWeirdType() const;
 
 public:
     Processor(std::shared_ptr<SteamBot::Client>);
@@ -131,12 +133,36 @@ void Processor::getWhiteboardData(std::shared_ptr<SteamBot::Client> client)
 
 /************************************************************************/
 
+void Processor::printWeirdType() const
+{
+    std::unordered_map<SteamBot::LicenseType, uint32_t> weird;
+    for (const auto& pair: licenses->licenses)
+    {
+        auto type=pair.second->licenseType;
+        if (type!=SteamBot::LicenseType::SinglePurchase)
+        {
+            weird[type]++;
+        }
+    }
+    if (!weird.empty())
+    {
+        std::cout << "You have licenses that are not \"" << SteamBot::enumToString(SteamBot::LicenseType::SinglePurchase) << "\": \n";
+        for (const auto& pair: weird)
+        {
+            std::cout << "   " << pair.second << " \xC3\x97 " << SteamBot::enumToString(pair.first) << "\n";
+        }
+    }
+}
+
+/************************************************************************/
+
 Processor::Processor(std::shared_ptr<SteamBot::Client> client)
 {
     getWhiteboardData(std::move(client));
     if (licenses)
     {
         std::cout << licenses->licenses.size() << " licenses\n";
+        printWeirdType();
     }
 }
 
