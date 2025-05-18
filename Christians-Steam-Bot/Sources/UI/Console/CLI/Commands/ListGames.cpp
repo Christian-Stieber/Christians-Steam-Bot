@@ -167,21 +167,7 @@ namespace
 
 bool ListGamesCommand::Execute::isEarlyAccess(const OwnedGames::GameInfo& info) const
 {
-    if (auto json=SteamBot::AppInfo::get(info.appId, "common", "genres"))
-    {
-        if (auto genres=json->if_object())
-        {
-            for (const auto& genre: *genres)
-            {
-                auto id=SteamBot::JSON::toNumber<int>(genre.value());
-                if (id==70)
-                {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
+    return SteamBot::AppInfo::isEarlyAccess(info.appId);
 }
 
 /************************************************************************/

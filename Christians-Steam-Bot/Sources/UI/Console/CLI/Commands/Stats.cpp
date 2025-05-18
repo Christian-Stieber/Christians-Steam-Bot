@@ -26,6 +26,7 @@
 #include "Modules/Executor.hpp"
 #include "Steam/AppType.hpp"
 #include "Steam/BillingType.hpp"
+#include "AppInfo.hpp"
 
 /************************************************************************/
 
@@ -81,28 +82,6 @@ namespace
 class Processor
 {
 private:
-    struct
-    {
-        uint32_t game=0;
-        uint32_t DLC=0;
-        uint32_t demo=0;
-        uint32_t other=0;
-    } app;
-
-    struct
-    {
-        uint32_t adult=0;
-        uint32_t earlyAccess=0;
-    } category;
-
-    struct
-    {
-        uint32_t f2p=0;
-        uint32_t promotional=0;
-        uint32_t regular=0;
-        uint32_t other=0;
-    } license;
-
     Licenses::Ptr licenses;
 
     void getWhiteboardData(std::shared_ptr<SteamBot::Client>);
@@ -131,6 +110,18 @@ public:
             }
         }
         counters.emplace_back(key, 1);
+    }
+
+    uint32_t get(T key) const
+    {
+        for (auto& entry: counters)
+        {
+            if (entry.first==key)
+            {
+                return entry.second;
+            }
+        }
+        return 0;
     }
 
     bool empty() const
@@ -188,6 +179,7 @@ void Processor::process() const
     static constexpr auto paymentStore=static_cast<SteamBot::PaymentMethod>(9999);
 
     Counters<SteamBot::AppType> appTypes;
+    Counters<SteamBot::AppType> earlyAccess;
     Counters<SteamBot::BillingType> billing;
 
     std::vector<std::shared_ptr<const Licenses::LicenseInfo>> noPackageData;
@@ -225,7 +217,13 @@ void Processor::process() const
                 auto &appCount=appCounters[appId];
                 if (appCount==0)
                 {
-                    appTypes.add(SteamBot::AppInfo::getAppType(appId));
+                    auto appType=SteamBot::AppInfo::getAppType(appId);
+                    appTypes.add(appType);
+
+                    if (SteamBot::AppInfo::isEarlyAccess(appId))
+                    {
+                        earlyAccess.add(appType);
+                    }
                 }
                 appCount++;
             }
@@ -261,7 +259,17 @@ void Processor::process() const
     }
 
     std::cout << "You have these app types:\n";
-    appTypes.print();
+    appTypes.sort();
+    for (const auto& entry: appTypes.getCounters())
+    {
+        std::cout << "   " << entry.second << " \xC3\x97 " << SteamBot::enumToString(entry.first);
+        auto early=earlyAccess.get(entry.first);
+        if (early>0)
+        {
+            std::cout << " (" << early << " early access)";
+        }
+        std::cout << "\n";
+    }
 }
 
 /************************************************************************/
