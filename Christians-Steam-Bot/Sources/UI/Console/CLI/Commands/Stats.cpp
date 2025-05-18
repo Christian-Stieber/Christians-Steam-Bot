@@ -94,13 +94,6 @@ private:
 
     struct
     {
-        uint32_t free=0;
-        uint32_t store=0;
-        uint32_t key=0;
-    } payment;
-
-    struct
-    {
         uint32_t f2p=0;
         uint32_t promotional=0;
         uint32_t regular=0;
@@ -110,10 +103,60 @@ private:
     Licenses::Ptr licenses;
 
     void getWhiteboardData(std::shared_ptr<SteamBot::Client>);
-    void printWeirdType() const;
+    void process() const;
 
 public:
     Processor(std::shared_ptr<SteamBot::Client>);
+};
+
+/************************************************************************/
+
+template <typename T> class Counters
+{
+    typedef  std::pair<T, uint32_t> Entry;
+    std::vector<Entry> counters;
+
+public:
+    void add(T key)
+    {
+        for (auto& entry: counters)
+        {
+            if (entry.first==key)
+            {
+                entry.second++;
+                return;
+            }
+        }
+        counters.emplace_back(key, 1);
+    }
+
+    bool empty() const
+    {
+        return counters.empty();
+    }
+
+    void sort()
+    {
+        std::sort(counters.begin(), counters.end(),
+                  [](const Entry& left, const Entry &right)
+                  {
+                      return left.second>right.second;
+                  });
+    }
+
+    void print()
+    {
+        sort();
+        for (const auto& entry: counters)
+        {
+            std::cout << "   " << entry.second << " \xC3\x97 " << SteamBot::enumToString(entry.first) << "\n";
+        }
+    }
+
+    const auto& getCounters() const
+    {
+        return counters;
+    }
 };
 
 /************************************************************************/
@@ -133,24 +176,55 @@ void Processor::getWhiteboardData(std::shared_ptr<SteamBot::Client> client)
 
 /************************************************************************/
 
-void Processor::printWeirdType() const
+void Processor::process() const
 {
-    std::unordered_map<SteamBot::LicenseType, uint32_t> weird;
+    // Count for licenses that are not SinglePurchase
+    Counters<SteamBot::LicenseType> weird;
+
+    // Payment methods
+    Counters<SteamBot::PaymentMethod> payment;
+    static constexpr auto paymentStore=static_cast<SteamBot::PaymentMethod>(9999);
+
     for (const auto& pair: licenses->licenses)
     {
-        auto type=pair.second->licenseType;
-        if (type!=SteamBot::LicenseType::SinglePurchase)
+        auto licenseType=pair.second->licenseType;
+        if (licenseType!=SteamBot::LicenseType::SinglePurchase)
         {
-            weird[type]++;
+            weird.add(licenseType);
+        }
+
+        auto paymentMethod=pair.second->paymentMethod;
+        switch (paymentMethod)
+        {
+        case SteamBot::PaymentMethod::None:
+        case SteamBot::PaymentMethod::ActivationCode:
+        case SteamBot::PaymentMethod::Complimentary:
+            payment.add(paymentMethod);
+            break;
+
+        default:
+            payment.add(paymentStore);
+            break;
         }
     }
+
     if (!weird.empty())
     {
-        std::cout << "You have licenses that are not \"" << SteamBot::enumToString(SteamBot::LicenseType::SinglePurchase) << "\": \n";
-        for (const auto& pair: weird)
+        std::cout << "You have licenses that are not \"" << SteamBot::enumToString(SteamBot::LicenseType::SinglePurchase) << "\":\n";
+        weird.print();
+    }
+
+    std::cout << "Your payment types are:\n";
+    payment.sort();
+    for (const auto& entry: payment.getCounters())
+    {
+        std::string_view name=SteamBot::enumToString(entry.first);
+        if (entry.first==paymentStore)
         {
-            std::cout << "   " << pair.second << " \xC3\x97 " << SteamBot::enumToString(pair.first) << "\n";
+            assert(name.empty());
+            name="Steam-store";
         }
+        std::cout << "   " << entry.second << " \xC3\x97 " << name << "\n";
     }
 }
 
@@ -162,7 +236,7 @@ Processor::Processor(std::shared_ptr<SteamBot::Client> client)
     if (licenses)
     {
         std::cout << licenses->licenses.size() << " licenses\n";
-        printWeirdType();
+        process();
     }
 }
 
