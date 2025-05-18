@@ -22,7 +22,10 @@
 
 #include "EnumString.hpp"
 #include "Modules/LicenseList.hpp"
+#include "Modules/PackageData.hpp"
 #include "Modules/Executor.hpp"
+#include "Steam/AppType.hpp"
+#include "Steam/BillingType.hpp"
 
 /************************************************************************/
 
@@ -181,9 +184,15 @@ void Processor::process() const
     // Count for licenses that are not SinglePurchase
     Counters<SteamBot::LicenseType> weird;
 
-    // Payment methods
     Counters<SteamBot::PaymentMethod> payment;
     static constexpr auto paymentStore=static_cast<SteamBot::PaymentMethod>(9999);
+
+    Counters<SteamBot::AppType> appTypes;
+    Counters<SteamBot::BillingType> billing;
+
+    std::vector<std::shared_ptr<const Licenses::LicenseInfo>> noPackageData;
+
+    std::unordered_map<SteamBot::AppID, uint32_t> appCounters;
 
     for (const auto& pair: licenses->licenses)
     {
@@ -206,12 +215,36 @@ void Processor::process() const
             payment.add(paymentStore);
             break;
         }
+
+        const auto package=SteamBot::Modules::PackageData::getPackageInfo(*pair.second);
+        if (package)
+        {
+            billing.add(SteamBot::getBillingType(*package));
+            for (const SteamBot::AppID appId: package->appIds)
+            {
+                auto &appCount=appCounters[appId];
+                if (appCount==0)
+                {
+                    appTypes.add(SteamBot::AppInfo::getAppType(appId));
+                }
+                appCount++;
+            }
+        }
+        else
+        {
+            noPackageData.push_back(pair.second);
+        }
     }
 
     if (!weird.empty())
     {
         std::cout << "You have licenses that are not \"" << SteamBot::enumToString(SteamBot::LicenseType::SinglePurchase) << "\":\n";
         weird.print();
+    }
+
+    if (!noPackageData.empty())
+    {
+        std::cout << "No package data for " << noPackageData.size() << " licenses???\n";
     }
 
     std::cout << "Your payment types are:\n";
@@ -226,6 +259,9 @@ void Processor::process() const
         }
         std::cout << "   " << entry.second << " \xC3\x97 " << name << "\n";
     }
+
+    std::cout << "You have these app types:\n";
+    appTypes.print();
 }
 
 /************************************************************************/
