@@ -30,6 +30,7 @@
 #include "Modules/PackageInfo.hpp"
 #include "EnumString.hpp"
 #include "AppInfo.hpp"
+#include "Steam/AppType.hpp"
 
 #include "steamdatabase/protobufs/steam/enums_productinfo.pb.h"
 
@@ -253,6 +254,7 @@ struct Totals
     unsigned int earlyAccess=0;
     unsigned int adult=0;
     unsigned int DLC=0;
+    unsigned int nonGame=0;
 };
 
 /************************************************************************/
@@ -296,7 +298,16 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
 
     for (const auto& game : games)
     {
-        std::cout << std::setw(8) << static_cast<std::underlying_type_t<decltype(game->appId)>>(game->appId) << ": " << game->name;
+        std::cout << std::setw(8) << static_cast<std::underlying_type_t<decltype(game->appId)>>(game->appId) << ": ";
+        {
+            auto appType=SteamBot::AppInfo::getAppType(game->appId);
+            if (appType!=SteamBot::AppType::Game)
+            {
+                std::cout << "(" << SteamBot::enumToStringAlways(appType) << ") ";
+                totals.nonGame++;
+            }
+        }
+        std::cout << game->name;
 
         {
             bool adult_=isAdult(*game);
@@ -364,7 +375,12 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
         std::cout << "\n";
     }
 
-    std::cout << "listed " << games.size() << " games ("
+    std::cout << "listed " << games.size()-totals.nonGame << " games";
+    if (totals.nonGame>0)
+    {
+        std::cout << " and " << totals.nonGame << " other";
+    }
+    std::cout << " ("
               << totals.adult << " adult, "
               << totals.earlyAccess << " early access) and "
               << totals.DLC << " DLCs, with a total playtime of "
