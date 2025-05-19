@@ -93,26 +93,13 @@ public:
 
 /************************************************************************/
 
-template <typename T> class Counters
+template <typename T, typename U=uint32_t> class Counters
 {
-    typedef  std::pair<T, uint32_t> Entry;
+    typedef  std::pair<T, U> Entry;
     std::vector<Entry> counters;
 
 public:
-    void add(T key)
-    {
-        for (auto& entry: counters)
-        {
-            if (entry.first==key)
-            {
-                entry.second++;
-                return;
-            }
-        }
-        counters.emplace_back(key, 1);
-    }
-
-    uint32_t get(T key) const
+    U& set(T key)
     {
         for (auto& entry: counters)
         {
@@ -121,7 +108,26 @@ public:
                 return entry.second;
             }
         }
-        return 0;
+        auto &result=counters.emplace_back();
+        result.first=key;
+        return result.second;
+    }
+
+    U& add(T key)
+    {
+        return ++set(key);
+    }
+
+    U get(T key) const
+    {
+        for (auto& entry: counters)
+        {
+            if (entry.first==key)
+            {
+                return entry.second;
+            }
+        }
+        return U{};
     }
 
     bool empty() const
@@ -178,8 +184,25 @@ void Processor::process() const
     Counters<SteamBot::PaymentMethod> payment;
     static constexpr auto paymentStore=static_cast<SteamBot::PaymentMethod>(9999);
 
-    Counters<SteamBot::AppType> appTypes;
-    Counters<SteamBot::AppType> earlyAccess;
+    struct AppTypeInfo
+    {
+        uint32_t total=0;
+        uint32_t earlyAccess=0;
+        uint32_t freePromotion=0;
+
+        bool operator>(const AppTypeInfo& right) const
+        {
+            return total>right.total;
+        }
+
+        AppTypeInfo& operator++()
+        {
+            ++total;
+            return *this;
+        }
+    };
+
+    Counters<SteamBot::AppType, AppTypeInfo> appTypes;
     Counters<SteamBot::BillingType> billing;
 
     std::vector<std::shared_ptr<const Licenses::LicenseInfo>> noPackageData;
@@ -212,20 +235,20 @@ void Processor::process() const
         if (package)
         {
             billing.add(SteamBot::getBillingType(*package));
+            bool freePromotion=SteamBot::getFreePromotion(*package);
             for (const SteamBot::AppID appId: package->appIds)
             {
-                auto &appCount=appCounters[appId];
-                if (appCount==0)
+                auto appType=SteamBot::AppInfo::getAppType(appId);
+                auto& info=appTypes.set(appType);
+                if (appCounters[appId]++==0)
                 {
-                    auto appType=SteamBot::AppInfo::getAppType(appId);
-                    appTypes.add(appType);
-
-                    if (SteamBot::AppInfo::isEarlyAccess(appId))
-                    {
-                        earlyAccess.add(appType);
-                    }
+                    info.total++;
+                    if (SteamBot::AppInfo::isEarlyAccess(appId)) info.earlyAccess++;
                 }
-                appCount++;
+                if (freePromotion)
+                {
+                    info.freePromotion++;
+                }
             }
         }
         else
@@ -262,11 +285,24 @@ void Processor::process() const
     appTypes.sort();
     for (const auto& entry: appTypes.getCounters())
     {
-        std::cout << "   " << entry.second << " \xC3\x97 " << SteamBot::enumToString(entry.first);
-        auto early=earlyAccess.get(entry.first);
-        if (early>0)
+        std::cout << "   " << entry.second.total << " \xC3\x97 " << SteamBot::enumToString(entry.first);
+
         {
-            std::cout << " (" << early << " early access)";
+            const char *separator=" (";
+            if (entry.second.earlyAccess>0)
+            {
+                std::cout << separator << entry.second.earlyAccess << " early access";
+                separator=", ";
+            }
+            if (entry.second.freePromotion>0)
+            {
+                std::cout << separator << entry.second.freePromotion << " free promotion";
+                separator=", ";
+            }
+            if (separator[0]==',')
+            {
+                std::cout << ")";
+            }
         }
         std::cout << "\n";
     }
