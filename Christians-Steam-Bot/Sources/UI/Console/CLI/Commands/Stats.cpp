@@ -195,6 +195,7 @@ void Processor::process() const
         uint32_t total=0;
         uint32_t earlyAccess=0;
         uint32_t freePromotion=0;
+        uint32_t freeOnDemand=0;
 
         bool operator>(const AppTypeInfo& right) const
         {
@@ -270,6 +271,10 @@ void Processor::process() const
                 {
                     info.freePromotion++;
                 }
+                if (billingType==SteamBot::BillingType::FreeOnDemand)
+                {
+                    info.freeOnDemand++;
+                }
             }
         }
         else
@@ -329,6 +334,11 @@ void Processor::process() const
             if (entry.second.freePromotion>0)
             {
                 std::cout << separator << entry.second.freePromotion << " free promotion";
+                separator=", ";
+            }
+            if (entry.second.freeOnDemand>0)
+            {
+                std::cout << separator << entry.second.freeOnDemand << " F2P";
                 separator=", ";
             }
             if (separator[0]==',')
