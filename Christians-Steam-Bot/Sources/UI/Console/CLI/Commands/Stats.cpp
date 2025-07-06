@@ -184,6 +184,12 @@ void Processor::process() const
     Counters<SteamBot::PaymentMethod> payment;
     static constexpr auto paymentStore=static_cast<SteamBot::PaymentMethod>(9999);
 
+    struct
+    {
+        uint32_t freePromotion=0;
+        uint32_t freeOnDemand=0;
+    } complimentaryType;
+
     struct AppTypeInfo
     {
         uint32_t total=0;
@@ -234,8 +240,23 @@ void Processor::process() const
         const auto package=SteamBot::Modules::PackageData::getPackageInfo(*pair.second);
         if (package)
         {
-            billing.add(SteamBot::getBillingType(*package));
+            auto billingType=SteamBot::getBillingType(*package);
+            billing.add(billingType);
+
             bool freePromotion=SteamBot::getFreePromotion(*package);
+
+            if (paymentMethod==SteamBot::PaymentMethod::Complimentary)
+            {
+                if (freePromotion)
+                {
+                    complimentaryType.freePromotion++;
+                }
+                if (billingType==SteamBot::BillingType::FreeOnDemand)
+                {
+                    complimentaryType.freeOnDemand++;
+                }
+            }
+
             for (const SteamBot::AppID appId: package->appIds)
             {
                 auto appType=SteamBot::AppInfo::getAppType(appId);
@@ -279,6 +300,17 @@ void Processor::process() const
             name="Steam-store";
         }
         std::cout << "   " << entry.second << " \xC3\x97 " << name << "\n";
+        if (entry.first==SteamBot::PaymentMethod::Complimentary)
+        {
+            if (complimentaryType.freePromotion!=0)
+            {
+                std::cout << "      " << complimentaryType.freePromotion << " \xC3\x97 free promotion\n";
+            }
+            if (complimentaryType.freeOnDemand!=0)
+            {
+                std::cout << "      " << complimentaryType.freeOnDemand << " \xC3\x97 F2P\n";
+            }
+        }
     }
 
     std::cout << "You have these app types:\n";
