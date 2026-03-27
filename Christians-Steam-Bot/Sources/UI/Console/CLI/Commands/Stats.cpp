@@ -229,6 +229,7 @@ void Processor::process() const
         {
         case SteamBot::PaymentMethod::None:
         case SteamBot::PaymentMethod::ActivationCode:
+        case SteamBot::PaymentMethod::FamilyGroup:
         case SteamBot::PaymentMethod::Complimentary:
             payment.add(paymentMethod);
             break;
