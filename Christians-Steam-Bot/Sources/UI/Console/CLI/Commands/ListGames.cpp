@@ -39,6 +39,9 @@
 /************************************************************************/
 
 typedef CLI::Helpers::OwnedGames OwnedGames;
+typedef CLI::Helpers::Licenses Licenses;
+typedef CLI::Helpers::LicenseInfo LicenseInfo;
+typedef SteamBot::Modules::PackageData::PackageInfo PackageInfo;
 
 /************************************************************************/
 
@@ -130,10 +133,22 @@ namespace
             virtual ~Execute() =default;
 
         private:
-            bool printAdult(const OwnedGames::GameInfo&) const;
-            bool isEarlyAccess(const OwnedGames::GameInfo&) const;
-            bool isAdult(const OwnedGames::GameInfo&) const;
-            bool isFarmable(const OwnedGames::GameInfo&, const CLI::Helpers::BadgeData*) const;
+            struct GameItem
+            {
+                SteamBot::AppID appId=SteamBot::AppID::None;
+
+                std::string name;
+                SteamBot::AppType appType=SteamBot::AppType::Unknown;
+                std::optional<boost::json::object> adult;
+                bool earlyAccess=false;
+
+                std::shared_ptr<const OwnedGames::GameInfo> gameInfo;
+            };
+
+        private:
+            bool printAdult(const GameItem&) const;
+            std::vector<GameItem> createGameList(const CLI::Helpers::GameInfo&) const;
+            void sortGameList(std::vector<GameItem>&) const;
             void outputGameList(SteamBot::ClientInfo&, const CLI::Helpers::GameInfo&) const;
 
         public:
@@ -166,84 +181,44 @@ namespace
 
 /************************************************************************/
 
-bool ListGamesCommand::Execute::isEarlyAccess(const OwnedGames::GameInfo& info) const
+bool ListGamesCommand::Execute::printAdult(const  ListGamesCommand::Execute::GameItem& game) const
 {
-    return SteamBot::AppInfo::isEarlyAccess(info.appId);
-}
-
-/************************************************************************/
-
-bool ListGamesCommand::Execute::printAdult(const OwnedGames::GameInfo& info) const
-{
-    if (auto json=SteamBot::AppInfo::get(info.appId, "common", "content_descriptors"))
+    bool first=true;
+    if (game.adult)
     {
-        if (auto descriptors=json->if_object())
-        {
-            static const auto& names=[]() -> const auto& {
-                static std::array<std::string_view,5> myNames;
-                myNames.at(k_EContentDescriptor_NudityOrSexualContent-1)="nudity/sexual content";
-                myNames.at(k_EContentDescriptor_FrequentViolenceOrGore-1)="frequent violence/gore";
-                myNames.at(k_EContentDescriptor_AdultOnlySexualContent-1)="adult sexual content";
-                myNames.at(k_EContentDescriptor_GratuitousSexualContent-1)="gratuitous sexual content";
-                myNames.at(k_EContentDescriptor_AnyMatureContent-1)="any mature content";
-                return myNames;
-            }();
+        static constexpr auto names=[]() {
+            std::array<std::string_view,5> myNames;
+            myNames.at(k_EContentDescriptor_NudityOrSexualContent-1)="nudity/sexual content";
+            myNames.at(k_EContentDescriptor_FrequentViolenceOrGore-1)="frequent violence/gore";
+            myNames.at(k_EContentDescriptor_AdultOnlySexualContent-1)="adult sexual content";
+            myNames.at(k_EContentDescriptor_GratuitousSexualContent-1)="gratuitous sexual content";
+            myNames.at(k_EContentDescriptor_AnyMatureContent-1)="any mature content";
+            return myNames;
+        }();
 
-            bool first=true;
-            for (const auto& descriptor: *descriptors)
+        for (const auto& descriptor: *game.adult)
+        {
+            if (first)
             {
-                if (first)
-                {
-                    std::cout << "\n          adult: ";
-                    first=false;
-                }
-                else
-                {
-                    std::cout << ", ";
-                }
-                auto id=SteamBot::JSON::toNumber<EContentDescriptorID>(descriptor.value());
-                if (id>=1 && id<=static_cast<int>(names.size()))
-                {
-                    std::cout << names[static_cast<size_t>(id-1)];
-                }
-                else
-                {
-                    std::cout << id;
-                }
+                std::cout << "\n          adult: ";
+                first=false;
             }
-            return !first;
+            else
+            {
+                std::cout << ", ";
+            }
+            auto id=SteamBot::JSON::toNumber<EContentDescriptorID>(descriptor.value());
+            if (id>=1 && id<=static_cast<int>(names.size()))
+            {
+                std::cout << names[static_cast<size_t>(id-1)];
+            }
+            else
+            {
+                std::cout << id;
+            }
         }
     }
-    return false;
-}
-
-/************************************************************************/
-
-bool ListGamesCommand::Execute::isAdult(const OwnedGames::GameInfo& info) const
-{
-    if (auto json=SteamBot::AppInfo::get(info.appId, "common", "content_descriptors"))
-    {
-        if (auto descriptors=json->if_object())
-        {
-            return !descriptors->empty();
-        }
-    }
-    return false;
-}
-
-/************************************************************************/
-
-bool ListGamesCommand::Execute::isFarmable(const OwnedGames::GameInfo& info, const CLI::Helpers::BadgeData* badgeData) const
-{
-    if (badgeData!=nullptr)
-    {
-        auto iterator=badgeData->badges.find(info.appId);
-        if (iterator!=badgeData->badges.end())
-        {
-            return iterator->second.cardsReceived<iterator->second.cardsEarned;
-        }
-    }
-    return false;
+    return !first;
 }
 
 /************************************************************************/
@@ -259,89 +234,170 @@ struct Totals
 
 /************************************************************************/
 
-void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo, const CLI::Helpers::GameInfo& gameInfo) const
+std::vector<ListGamesCommand::Execute::GameItem> ListGamesCommand::Execute::createGameList(const CLI::Helpers::GameInfo& gameInfo) const
 {
-    typedef std::shared_ptr<const OwnedGames::GameInfo> ItemType;
-
-    std::vector<ItemType> games;
+    std::unordered_set<SteamBot::AppID> appIds;
+    for (const auto &license : gameInfo.licenses->licenses)
     {
-        for (const auto& item : gameInfo.ownedGames->games)
+        auto package=SteamBot::Modules::PackageData::getPackageInfo(*(license.second));
+        if (package!=nullptr)
         {
-            const auto& info=*(item.second);
-            if ((!adult || isAdult(info)) &&
-                (!earlyAccess || isEarlyAccess(info)) &&
-                (!farmable || isFarmable(info, gameInfo.badgeData.get())) &&
-                (!gamesRegex || gamesRegex->doesMatch(info.name, info.appId)))
-            {
-                games.emplace_back(item.second);
-            }
+            appIds.insert(package->appIds.begin(), package->appIds.end());
         }
     }
 
-    std::sort(games.begin(), games.end(), [this](const ItemType& left, const ItemType& right) -> bool {
+    std::vector<GameItem> games;
+    for (auto appId : appIds)
+    {
+        GameItem item;
+
+        item.appId=appId;
+
+        item.appType=SteamBot::AppInfo::getAppType(appId);
+        if (item.appType==SteamBot::AppType::DLC)
+        {
+            continue;
+        }
+
+        item.earlyAccess=SteamBot::AppInfo::isEarlyAccess(appId);
+        if (earlyAccess && !item.earlyAccess)
+        {
+            continue;
+        }
+
+        if (auto json=SteamBot::AppInfo::get(appId, "common", "content_descriptors"))
+        {
+            if (auto descriptors=json->if_object())
+            {
+                if (!descriptors->empty())
+                {
+                    item.adult.emplace(std::move(*descriptors));
+                }
+            }
+        }
+        if (adult && !item.adult)
+        {
+            continue;
+        }
+
+        if (farmable)
+        {
+            bool isFarmable=false;
+            if (auto badgeData=gameInfo.badgeData.get())
+            {
+                auto iterator=badgeData->badges.find(appId);
+                if (iterator!=badgeData->badges.end())
+                {
+                    if (iterator->second.cardsReceived<iterator->second.cardsEarned)
+                    {
+                        isFarmable=true;
+                    }
+                }
+            }
+            if (!isFarmable)
+            {
+                continue;
+            }
+        }
+
+        if (auto json=SteamBot::AppInfo::get(appId, "common", "name"))
+        {
+            if (auto string=json->if_string())
+            {
+                item.name=std::move(*string);
+            }
+        }
+        if (gamesRegex && ! gamesRegex->doesMatch(item.name, appId))
+        {
+            continue;
+        }
+
+        games.emplace_back(std::move(item));
+    }
+
+    return games;
+}
+
+/************************************************************************/
+
+void ListGamesCommand::Execute::sortGameList(std::vector<ListGamesCommand::Execute::GameItem> &games) const
+{
+    std::sort(games.begin(), games.end(), [this](const GameItem& left, const GameItem& right) -> bool {
+        static const OwnedGames::GameInfo empty;
+        const auto& l=left.gameInfo ? *(left.gameInfo) : empty;
+        const auto& r=right.gameInfo ? *(right.gameInfo) : empty;
+
         if (sortPlaytime)
         {
-            auto compare=(left->playtimeForever<=>right->playtimeForever);
+            auto compare=(l.playtimeForever<=>r.playtimeForever);
             if (compare==std::strong_ordering::less) return true;
             if (compare==std::strong_ordering::greater) return false;
         }
         else if (sortLastPlayed)
         {
-            auto compare=(left->lastPlayed<=>right->lastPlayed);
+            auto compare=(l.lastPlayed<=>r.lastPlayed);
             if (compare==std::strong_ordering::less) return true;
             if (compare==std::strong_ordering::greater) return false;
         }
-        return SteamBot::caseInsensitiveStringCompare_less(left->name, right->name);
+        return SteamBot::caseInsensitiveStringCompare_less(left.name, right.name);
     });
+}
+
+/************************************************************************/
+
+void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo, const CLI::Helpers::GameInfo& gameInfo) const
+{
+    auto games=createGameList(gameInfo);
+
+    sortGameList(games);
 
     Totals totals;
 
     for (const auto& game : games)
     {
-        std::cout << std::setw(8) << static_cast<std::underlying_type_t<decltype(game->appId)>>(game->appId) << ": ";
+        std::cout << std::setw(8) << static_cast<std::underlying_type_t<decltype(game.appId)>>(game.appId) << ": ";
+        if (game.appType!=SteamBot::AppType::Game)
         {
-            auto appType=SteamBot::AppInfo::getAppType(game->appId);
-            if (appType!=SteamBot::AppType::Game)
+            std::cout << "(" << SteamBot::enumToStringAlways(game.appType) << ") ";
+            totals.nonGame++;
+        }
+        std::cout << game.name;
+
+        if (game.adult || game.earlyAccess)
+        {
+            std::cout << " (";
+            if (game.adult)
             {
-                std::cout << "(" << SteamBot::enumToStringAlways(appType) << ") ";
-                totals.nonGame++;
+                std::cout << "Adult";
+                totals.adult++;
+                if (game.earlyAccess)
+                {
+                    std::cout << ", ";
+                }
+            }
+            if (game.earlyAccess)
+            {
+                std::cout << "Early Access";
+                totals.earlyAccess++;
+            }
+            std::cout << ")";
+        }
+
+        if (game.gameInfo)
+        {
+            if (game.gameInfo->lastPlayed!=decltype(game.gameInfo->lastPlayed)())
+            {
+                std::cout << "; last played " << SteamBot::Time::toString(game.gameInfo->lastPlayed);
+            }
+            if (game.gameInfo->playtimeForever.count()!=0)
+            {
+                std::cout << "; playtime " << SteamBot::Time::toString(game.gameInfo->playtimeForever);
+                totals.playtime+=game.gameInfo->playtimeForever;
             }
         }
-        std::cout << game->name;
 
         {
-            bool adult_=isAdult(*game);
-            bool earlyAccess_=isEarlyAccess(*game);
-            if (adult_ || earlyAccess_)
-            {
-                std::cout << " (";
-                if (adult_)
-                {
-                    std::cout << "Adult";
-                    totals.adult++;
-                }
-                if (adult_ && earlyAccess_) std::cout << ", ";
-                if (earlyAccess_)
-                {
-                    std::cout << "Early Access";
-                    totals.earlyAccess++;
-                }
-                std::cout << ")";
-            }
-        }
-
-        if (game->lastPlayed!=decltype(game->lastPlayed)())
-        {
-            std::cout << "; last played " << SteamBot::Time::toString(game->lastPlayed);
-        }
-        if (game->playtimeForever.count()!=0)
-        {
-            std::cout << "; playtime " << SteamBot::Time::toString(game->playtimeForever);
-            totals.playtime+=game->playtimeForever;
-        }
-
-        {
-            auto DLCs=SteamBot::AppInfo::getDLCs(game->appId);
+            auto DLCs=SteamBot::AppInfo::getDLCs(game.appId);
             for (auto appId: DLCs)
             {
                 auto licenses=CLI::Helpers::getLicenseInfo(clientInfo, appId);
@@ -356,11 +412,11 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
             }
         }
 
-        printAdult(*game);
+        printAdult(game);
 
         if (gameInfo.badgeData)
         {
-            auto iterator=gameInfo.badgeData->badges.find(game->appId);
+            auto iterator=gameInfo.badgeData->badges.find(game.appId);
             if (iterator!=gameInfo.badgeData->badges.end())
             {
                 if (iterator->second.cardsReceived<iterator->second.cardsEarned)

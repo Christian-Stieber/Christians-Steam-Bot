@@ -65,6 +65,10 @@ Helpers::GameInfo::GameInfo(const SteamBot::ClientInfo& clientInfo)
     if (auto client=clientInfo.getClient())
     {
         SteamBot::Modules::Executor::execute(std::move(client), [this](SteamBot::Client& client_) {
+            if (auto lic=client_.whiteboard.has<decltype(licenses)>())
+            {
+                licenses=*lic;
+            }
             if (auto games=client_.whiteboard.has<decltype(ownedGames)>())
             {
                 ownedGames=*games;

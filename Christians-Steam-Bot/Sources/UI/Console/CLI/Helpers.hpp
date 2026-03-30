@@ -40,16 +40,17 @@ public:
     ~Helpers();
 
 public:
-    typedef SteamBot::Modules::LicenseList::Whiteboard::Licenses::LicenseInfo LicenseInfo;
+    typedef SteamBot::Modules::OwnedGames::Whiteboard::OwnedGames OwnedGames;
+    typedef SteamBot::Modules::BadgeData::Whiteboard::BadgeData BadgeData;
+    typedef SteamBot::Modules::LicenseList::Whiteboard::Licenses Licenses;
+    typedef Licenses::LicenseInfo LicenseInfo;
     static std::vector<std::shared_ptr<const LicenseInfo>> getLicenseInfo(const SteamBot::ClientInfo&, SteamBot::AppID);
 
 public:
-    typedef SteamBot::Modules::OwnedGames::Whiteboard::OwnedGames OwnedGames;
-    typedef SteamBot::Modules::BadgeData::Whiteboard::BadgeData BadgeData;
-
     class GameInfo
     {
     public:
+        Licenses::Ptr licenses;
         OwnedGames::Ptr ownedGames;
         BadgeData::Ptr badgeData;
 
