@@ -100,6 +100,9 @@ namespace
                     ("no-dlc",
                      boost::program_options::bool_switch(),
                      "don't list DLCs")
+                    ("family",
+                     boost::program_options::bool_switch(),
+                     "only list games obtained from family")
                     ("adult",
                      boost::program_options::bool_switch(),
                      "only list adult games")
@@ -122,6 +125,7 @@ namespace
             std::optional<SteamBot::OptionRegexID> gamesRegex;
             bool adult=false;
             bool earlyAccess=false;
+            bool family=false;
             bool farmable=false;
             bool sortPlaytime=false;
             bool sortLastPlayed=false;
@@ -141,12 +145,24 @@ namespace
                 SteamBot::AppType appType=SteamBot::AppType::Unknown;
                 std::optional<boost::json::object> adult;
                 bool earlyAccess=false;
+                bool family=false;
 
                 std::shared_ptr<const OwnedGames::GameInfo> gameInfo;
             };
 
+            struct Totals
+            {
+                std::chrono::minutes playtime{0};
+                unsigned int family=0;
+                unsigned int earlyAccess=0;
+                unsigned int adult=0;
+                unsigned int DLC=0;
+                unsigned int nonGame=0;
+            };
+
         private:
             bool printAdult(const GameItem&) const;
+            void printFlags(const GameItem&, Totals &) const;
             std::vector<GameItem> createGameList(const CLI::Helpers::GameInfo&) const;
             void sortGameList(std::vector<GameItem>&) const;
             void outputGameList(SteamBot::ClientInfo&, const CLI::Helpers::GameInfo&) const;
@@ -155,6 +171,7 @@ namespace
             virtual bool init(const boost::program_options::variables_map& options) override
             {
                 noDLC=options["no-dlc"].as<bool>();
+                family=options["family"].as<bool>();
                 adult=options["adult"].as<bool>();
                 earlyAccess=options["early-access"].as<bool>();
                 farmable=options["farmable"].as<bool>();
@@ -223,49 +240,46 @@ bool ListGamesCommand::Execute::printAdult(const  ListGamesCommand::Execute::Gam
 
 /************************************************************************/
 
-struct Totals
-{
-    std::chrono::minutes playtime{0};
-    unsigned int earlyAccess=0;
-    unsigned int adult=0;
-    unsigned int DLC=0;
-    unsigned int nonGame=0;
-};
-
-/************************************************************************/
-
 std::vector<ListGamesCommand::Execute::GameItem> ListGamesCommand::Execute::createGameList(const CLI::Helpers::GameInfo& gameInfo) const
 {
-    std::unordered_set<SteamBot::AppID> appIds;
+    std::unordered_map<SteamBot::AppID, bool /* not family */> appIds;
     for (const auto &license : gameInfo.licenses->licenses)
     {
-        auto package=SteamBot::Modules::PackageData::getPackageInfo(*(license.second));
-        if (package!=nullptr)
+        if (auto package=SteamBot::Modules::PackageData::getPackageInfo(*(license.second)))
         {
-            appIds.insert(package->appIds.begin(), package->appIds.end());
+            for (auto appId: package->appIds)
+            {
+                appIds[appId]|=(license.second->paymentMethod!=SteamBot::PaymentMethod::FamilyGroup);
+            }
         }
     }
 
     std::vector<GameItem> games;
     for (auto appId : appIds)
     {
+        if (family && appId.second)
+        {
+            continue;
+        }
+
         GameItem item;
 
-        item.appId=appId;
+        item.appId=appId.first;
+        item.family=!appId.second;
 
-        item.appType=SteamBot::AppInfo::getAppType(appId);
+        item.appType=SteamBot::AppInfo::getAppType(item.appId);
         if (item.appType==SteamBot::AppType::DLC)
         {
             continue;
         }
 
-        item.earlyAccess=SteamBot::AppInfo::isEarlyAccess(appId);
+        item.earlyAccess=SteamBot::AppInfo::isEarlyAccess(item.appId);
         if (earlyAccess && !item.earlyAccess)
         {
             continue;
         }
 
-        if (auto json=SteamBot::AppInfo::get(appId, "common", "content_descriptors"))
+        if (auto json=SteamBot::AppInfo::get(item.appId, "common", "content_descriptors"))
         {
             if (auto descriptors=json->if_object())
             {
@@ -285,7 +299,7 @@ std::vector<ListGamesCommand::Execute::GameItem> ListGamesCommand::Execute::crea
             bool isFarmable=false;
             if (auto badgeData=gameInfo.badgeData.get())
             {
-                auto iterator=badgeData->badges.find(appId);
+                auto iterator=badgeData->badges.find(item.appId);
                 if (iterator!=badgeData->badges.end())
                 {
                     if (iterator->second.cardsReceived<iterator->second.cardsEarned)
@@ -300,14 +314,14 @@ std::vector<ListGamesCommand::Execute::GameItem> ListGamesCommand::Execute::crea
             }
         }
 
-        if (auto json=SteamBot::AppInfo::get(appId, "common", "name"))
+        if (auto json=SteamBot::AppInfo::get(item.appId, "common", "name"))
         {
             if (auto string=json->if_string())
             {
                 item.name=std::move(*string);
             }
         }
-        if (gamesRegex && ! gamesRegex->doesMatch(item.name, appId))
+        if (gamesRegex && ! gamesRegex->doesMatch(item.name, item.appId))
         {
             continue;
         }
@@ -345,6 +359,43 @@ void ListGamesCommand::Execute::sortGameList(std::vector<ListGamesCommand::Execu
 
 /************************************************************************/
 
+void ListGamesCommand::Execute::printFlags(const ListGamesCommand::Execute::GameItem& game, ListGamesCommand::Execute::Totals &totals) const
+{
+    std::vector<std::string_view> flags;
+
+    if (game.family)
+    {
+        totals.family++;
+        flags.push_back("Family");
+    }
+    if (game.adult)
+    {
+        totals.adult++;
+        flags.push_back("Adult");
+    }
+    if (game.earlyAccess)
+    {
+        totals.earlyAccess++;
+        flags.push_back("Early Access");
+    }
+
+    if (!flags.empty())
+    {
+        std::cout << " (";
+        for (size_t i=0; i<flags.size(); i++)
+        {
+            if (i>0)
+            {
+                std::cout << ", ";
+            }
+            std::cout << flags[i];
+        }
+        std::cout << ")";
+    }
+}
+
+/************************************************************************/
+
 void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo, const CLI::Helpers::GameInfo& gameInfo) const
 {
     auto games=createGameList(gameInfo);
@@ -363,25 +414,7 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
         }
         std::cout << game.name;
 
-        if (game.adult || game.earlyAccess)
-        {
-            std::cout << " (";
-            if (game.adult)
-            {
-                std::cout << "Adult";
-                totals.adult++;
-                if (game.earlyAccess)
-                {
-                    std::cout << ", ";
-                }
-            }
-            if (game.earlyAccess)
-            {
-                std::cout << "Early Access";
-                totals.earlyAccess++;
-            }
-            std::cout << ")";
-        }
+        printFlags(game, totals);
 
         if (game.gameInfo)
         {
@@ -437,6 +470,7 @@ void ListGamesCommand::Execute::outputGameList(SteamBot::ClientInfo& clientInfo,
         std::cout << " and " << totals.nonGame << " other";
     }
     std::cout << " ("
+              << totals.family << " from family, "
               << totals.adult << " adult, "
               << totals.earlyAccess << " early access) and "
               << totals.DLC << " DLCs, with a total playtime of "
