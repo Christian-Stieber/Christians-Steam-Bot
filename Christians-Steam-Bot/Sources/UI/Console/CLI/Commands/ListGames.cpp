@@ -326,6 +326,11 @@ std::vector<ListGamesCommand::Execute::GameItem> ListGamesCommand::Execute::crea
             continue;
         }
 
+        if (gameInfo.ownedGames)
+        {
+            item.gameInfo=gameInfo.ownedGames->getInfo(item.appId);
+        }
+
         games.emplace_back(std::move(item));
     }
 
