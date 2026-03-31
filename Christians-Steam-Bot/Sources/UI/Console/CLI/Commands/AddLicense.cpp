@@ -33,7 +33,7 @@ namespace
     private:
         static constexpr std::string_view commandName{std::is_same_v<LICENSETYPE, SteamBot::PackageID> ? "add-license" : "add-app"};
         static constexpr std::string_view optionName{std::is_same_v<LICENSETYPE, SteamBot::PackageID> ? "packageid" : "appid"};
-        static constexpr std::string optionValue{std::is_same_v<LICENSETYPE, SteamBot::PackageID> ? "package-id" : "app-id"};
+        static inline const std::string optionValue{std::is_same_v<LICENSETYPE, SteamBot::PackageID> ? "package-id" : "app-id"};
 
     public:
         virtual bool global() const
