@@ -130,9 +130,12 @@ namespace
                         for (auto appId : appIds)
                         {
                             std::cout << " " << toInteger(appId);
-                            if (auto info=ownedGames->getInfo(appId))
+                            if (ownedGames)
                             {
-                                std::cout << " (" << info->name << ")";
+                                if (auto info=ownedGames->getInfo(appId))
+                                {
+                                    std::cout << " (" << info->name << ")";
+                                }
                             }
                         }
                         std::cout << " on account " << client->getClientInfo().accountName << std::endl;
