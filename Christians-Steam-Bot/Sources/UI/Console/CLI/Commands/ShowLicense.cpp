@@ -71,6 +71,9 @@ namespace
                     ("appId",
                      boost::program_options::value<uint32_t>()->value_name("appId"),
                      "game to list")
+                    ("noInfo",
+                     boost::program_options::bool_switch(),
+                     "only list package names")
                     ;
                 return options_;
             }();
@@ -81,6 +84,7 @@ namespace
         {
         private:
             SteamBot::AppID appId;
+            bool noInfo = false;
 
         public:
             using ExecuteBase::ExecuteBase;
@@ -90,6 +94,8 @@ namespace
         public:
             virtual bool init(const boost::program_options::variables_map& options) override
             {
+                noInfo=options["noInfo"].as<bool>();
+
                 if (options.count("appId"))
                 {
                     try
@@ -132,6 +138,9 @@ namespace
     private:
         SteamBot::AppID game=SteamBot::AppID::None;
 
+        // ToDo: rearrange things so (stuff like) this doesn't need to be copied...
+        bool noInfo = false;
+
         std::unordered_map<SteamBot::PackageID, std::shared_ptr<const LicenseInfo>> licenses;
 
     private:
@@ -139,8 +148,8 @@ namespace
         void printLicense(SteamBot::PackageID);
 
     public:
-        Info(SteamBot::AppID game_)
-            : game(game_)
+        Info(SteamBot::AppID game_, bool noInfo_)
+            : game(game_), noInfo (noInfo_)
         {
         }
 
@@ -202,31 +211,37 @@ void Info::printLicense(SteamBot::PackageID packageId)
 
             std::cout << "   package " << license.packageId;
 
-            if (package)
+            if (!noInfo)
             {
-                auto billingType=SteamBot::getBillingType(*package);
-                if (billingType!=decltype(billingType)::Unknown)
+                if (package)
                 {
-                    std::cout << " (" << SteamBot::enumToStringAlways(billingType) << ')';
+                    auto billingType=SteamBot::getBillingType(*package);
+                    if (billingType!=decltype(billingType)::Unknown)
+                    {
+                        std::cout << " (" << SteamBot::enumToStringAlways(billingType) << ')';
+                    }
                 }
-            }
 
-            std::cout << " purchased " << SteamBot::Time::toString(license.timeCreated, false);
+                std::cout << " purchased " << SteamBot::Time::toString(license.timeCreated, false);
 
-            if (license.paymentMethod!=decltype(license.paymentMethod)::None)
-            {
-                std::cout << " (" << SteamBot::enumToStringAlways(license.paymentMethod) << ')';
+                if (license.paymentMethod!=decltype(license.paymentMethod)::None)
+                {
+                    std::cout << " (" << SteamBot::enumToStringAlways(license.paymentMethod) << ')';
+                }
             }
 
             std::cout << '\n';
 
-            if (package)
+            if (!noInfo)
             {
-                for (const SteamBot::AppID appId: package->appIds)
+                if (package)
                 {
-                    std::cout << "      "
-                              << SteamBot::enumToStringAlways(SteamBot::AppInfo::getAppType(appId))
-                              << " " << appId << '\n';
+                    for (const SteamBot::AppID appId: package->appIds)
+                    {
+                        std::cout << "      "
+                                  << SteamBot::enumToStringAlways(SteamBot::AppInfo::getAppType(appId))
+                                  << " " << appId << '\n';
+                    }
                 }
             }
 
@@ -277,7 +292,7 @@ void ShowLicenseCommand::Execute::execute(SteamBot::ClientInfo* clientInfo) cons
 {
     if (auto client=clientInfo->getClient())
     {
-        Info info(appId);
+        Info info(appId, noInfo);
         SteamBot::Modules::Executor::execute(std::move(client), [&info](SteamBot::Client&) {
             info.init();
         });
