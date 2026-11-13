@@ -146,6 +146,7 @@ namespace
                 std::optional<boost::json::object> adult;
                 bool earlyAccess=false;
                 bool family=false;
+                bool expired=false;
 
                 std::shared_ptr<const OwnedGames::GameInfo> gameInfo;
             };
@@ -242,22 +243,34 @@ bool ListGamesCommand::Execute::printAdult(const  ListGamesCommand::Execute::Gam
 
 std::vector<ListGamesCommand::Execute::GameItem> ListGamesCommand::Execute::createGameList(const CLI::Helpers::GameInfo& gameInfo) const
 {
-    std::unordered_map<SteamBot::AppID, bool /* not family */> appIds;
+    struct Info
+    {
+        bool notFamily=false;
+        bool expired=false;
+
+        void update(const LicenseInfo& license)
+        {
+            notFamily|=(license.paymentMethod!=SteamBot::PaymentMethod::FamilyGroup);
+            expired|=license.isExpired();
+        }
+    };
+
+    std::unordered_map<SteamBot::AppID, Info> appIds;
     for (const auto &license : gameInfo.licenses->licenses)
     {
         if (auto package=SteamBot::Modules::PackageData::getPackageInfo(*(license.second)))
         {
             for (auto appId: package->appIds)
             {
-                appIds[appId]|=(license.second->paymentMethod!=SteamBot::PaymentMethod::FamilyGroup);
+                appIds[appId].update(*license.second);
             }
         }
     }
 
     std::vector<GameItem> games;
-    for (auto appId : appIds)
+    for (const auto &appId : appIds)
     {
-        if (family && appId.second)
+        if (family && appId.second.notFamily)
         {
             continue;
         }
@@ -265,8 +278,8 @@ std::vector<ListGamesCommand::Execute::GameItem> ListGamesCommand::Execute::crea
         GameItem item;
 
         item.appId=appId.first;
-        item.family=!appId.second;
-
+        item.family=!appId.second.notFamily;
+        item.expired=appId.second.expired;
         item.appType=SteamBot::AppInfo::getAppType(item.appId);
         if (item.appType==SteamBot::AppType::DLC)
         {
@@ -368,6 +381,10 @@ void ListGamesCommand::Execute::printFlags(const ListGamesCommand::Execute::Game
 {
     std::vector<std::string_view> flags;
 
+    if (game.expired)
+    {
+        flags.push_back("EXPIRED");
+    }
     if (game.family)
     {
         totals.family++;
