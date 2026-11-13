@@ -209,7 +209,12 @@ void Info::printLicense(SteamBot::PackageID packageId)
             const LicenseInfo& license=(*iterator->second);
             const auto package=SteamBot::Modules::PackageData::getPackageInfo(license);
 
-            std::cout << "   package " << license.packageId;
+            std::cout << "   ";
+            if (license.isExpired())
+            {
+                std::cout << "expired ";
+            }
+            std::cout << "package " << license.packageId;
 
             if (!noInfo)
             {
